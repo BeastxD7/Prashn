@@ -1,1 +1,1 @@
-{"root":["./src/app.ts","./src/db/prisma.ts","./src/routes/user.router.ts"],"version":"5.9.2"}
+{"root":["./src/app.ts","./src/controllers/quiz.controller.ts","./src/db/prisma.ts","./src/llm/invokellm.ts","./src/routes/quiz.route.ts","./src/routes/user.route.ts"],"version":"5.9.2"}
