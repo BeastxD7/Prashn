@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:latest
+    container_name: quizify-db
+    restart: always
+    environment:
+      POSTGRES_DB: quizify
+      POSTGRES_USER: beast
+      POSTGRES_PASSWORD: qwerty
+    ports:
+      - "5432:5432"
+    volumes:
+      - quizify_data:/var/lib/postgresql/data
+
+volumes:
+  quizify_data:

@@ -1,0 +1,1 @@
+{"root":["./src/app.ts","./src/db/prisma.ts","./src/routes/user.router.ts"],"version":"5.9.2"}
