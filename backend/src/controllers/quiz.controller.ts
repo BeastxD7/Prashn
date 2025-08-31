@@ -310,7 +310,7 @@ export const generateQuizByPdf = [
     try {
       if (!req.file) return res.status(400).json({ error: 'Missing PDF file upload' });
 
-      const { title, description, userId } = req.body;
+      const { title, description } = req.body;
       let { questionTypes, difficulty, numOfQuestions } = req.body;
 
       questionTypes = questionTypes ? questionTypes.split(',').map((s: string) => s.trim()) : ['MCQ', 'SHORT_ANSWER'];
@@ -324,21 +324,38 @@ export const generateQuizByPdf = [
         return res.status(422).json({ error: 'Failed to extract text from PDF or PDF is empty.' });
       }
 
-      const prompt = `
-You are an AI quiz generator.
+ const prompt = `
+    You are a quiz generation AI.
 
-Generate exactly ${numOfQuestions} quiz questions using ONLY the following text extracted from a PDF document:
+    Generate exactly ${numOfQuestions} quiz questions based ONLY on the following content which is extracted from PDF.
+    Do NOT generate fewer or more than ${numOfQuestions}.
+    Return ONLY a valid JSON array with exactly ${numOfQuestions} question objects, each with fields:
+    type, content, options (if applicable), answer, explanation (optional), difficulty.
+    Use ONLY the following content to create the questions:
 
----
-${content}
----
+    Content:
+    ---
+    ${content}
+    ---
 
-Use question types: ${questionTypes.join(', ')}
-Difficulty: ${difficulty}
+    Use question types: ${
+          questionTypes?.join(", ") || "MCQ, SHORT_ANSWER"
+        }
+    Difficulty level: ${difficulty || "MEDIUM"}
 
-Return ONLY a valid JSON array with each question object containing:
-type, content, options (if any), answer, explanation (optional), difficulty.
-`;
+    Example format:
+    [
+      {
+        "type": "MCQ",
+        "content": "Question text",
+        "options": ["Option 1", "Option 2"],
+        "answer": "Option 1",
+        "explanation": "Explanation text.",
+        "difficulty": "EASY"
+      }
+    ]
+    `;
+
       console.log("---------------------------------------------");
       console.log('Generated prompt for LLM:', prompt);
       console.log("---------------------------------------------");
@@ -351,7 +368,8 @@ type, content, options (if any), answer, explanation (optional), difficulty.
 
       const fixedJson = fixJsonStructure(llmResponse);
       if (!fixedJson) return res.status(422).json({ error: 'LLM output was not valid JSON.' });
-
+      console.log(fixedJson);
+      
       const questions = JSON.parse(fixedJson);
 
       if (!Array.isArray(questions) || questions.some(q => !validateQuestion(q))) {
