@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.invokeLLM = invokeLLM;
 const groq_sdk_1 = __importDefault(require("groq-sdk"));
 const groq = new groq_sdk_1.default();
-const default_model = "openai/gpt-oss-20b";
+const default_model = "openai/gpt-oss-120b";
 function invokeLLM(prompt_1) {
     return __awaiter(this, arguments, void 0, function* (prompt, model = default_model) {
         var _a, _b;
@@ -32,6 +32,38 @@ function invokeLLM(prompt_1) {
             ],
             model: model,
             temperature: 0,
+            response_format: {
+                type: "json_schema",
+                json_schema: {
+                    name: "quiz_questions",
+                    schema: {
+                        type: "object",
+                        properties: {
+                            questions: {
+                                type: "array",
+                                items: {
+                                    type: "object",
+                                    properties: {
+                                        type: { type: "string", enum: ["MCQ", "SHORT_ANSWER", "TRUE_FALSE", "FILL_IN_THE_BLANK", "MATCHING", "ESSAY", "ORDERING"] },
+                                        content: { type: "string" },
+                                        options: {
+                                            type: "array",
+                                            items: { type: "string" }
+                                        },
+                                        answer: { type: "string" },
+                                        explanation: { type: "string" },
+                                        difficulty: { type: "string", enum: ["EASY", "MEDIUM", "HARD"] }
+                                    },
+                                    required: ["type", "content", "options", "answer", "explanation", "difficulty"],
+                                    additionalProperties: false
+                                }
+                            }
+                        },
+                        required: ["questions"],
+                        additionalProperties: false
+                    }
+                }
+            }
         });
         return ((_b = (_a = completion.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "";
     });

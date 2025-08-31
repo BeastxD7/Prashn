@@ -319,7 +319,8 @@ exports.generateQuizByPdf = [
             if (!fixedJson)
                 return res.status(422).json({ error: 'LLM output was not valid JSON.' });
             console.log(fixedJson);
-            let questions = JSON.parse(fixedJson);
+            let questions = JSON.parse(fixedJson).questions;
+            console.log("Parsed questions:", questions);
             // Remove extra questions if too many (preserve only the first numOfQuestions)
             if (questions.length > numOfQuestions) {
                 questions = questions.slice(0, numOfQuestions);
