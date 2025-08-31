@@ -16,7 +16,8 @@ export async function invokeLLM(prompt: string, model:string = default_model): P
         content: prompt,
       },
     ],
-    model: model
+    model: model,
+    temperature: 0,
   });
 
   return completion.choices[0]?.message?.content || "";

@@ -44,7 +44,7 @@ model Question {
   content     String    // Question text
 
   options     Json?     // Store MCQ options, matching pairs, sequence items, etc.
-  answer      Json      // Correct answer(s) as JSON for flexibility
+  answer      String      // Correct answer(s) as JSON for flexibility
 
   explanation String?   // Explanation for the answer (optional)
 

@@ -30,7 +30,8 @@ function invokeLLM(prompt_1) {
                     content: prompt,
                 },
             ],
-            model: model
+            model: model,
+            temperature: 0,
         });
         return ((_b = (_a = completion.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "";
     });
