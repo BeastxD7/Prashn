@@ -12,12 +12,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateQuizByPdf = exports.editQuizQuestionsOnly = exports.saveQuiz = exports.generateQuizByText = void 0;
+exports.generateQuizByYoutube = exports.generateQuizByPdf = exports.editQuizQuestionsOnly = exports.saveQuiz = exports.generateQuizByText = void 0;
 const prisma_1 = __importDefault(require("../db/prisma"));
 const invokellm_1 = require("../llm/invokellm");
 const fix_json_1 = require("../utils/fix_json");
 const multer_1 = __importDefault(require("multer"));
 const pdf_parse_1 = __importDefault(require("pdf-parse"));
+const youtube_transcript_1 = require("../utils/youtube-transcript");
 const userId = "aa922398-43d0-4ba7-98c2-a3dea9f767f4";
 // Utility: Validate universal question schema (simplified)
 function validateQuestion(q) {
@@ -308,19 +309,19 @@ exports.generateQuizByPdf = [
       }
     ]
     `;
-            console.log("---------------------------------------------");
-            console.log('Generated prompt for LLM:', prompt);
-            console.log("---------------------------------------------");
+            // console.log("---------------------------------------------");
+            // console.log('Generated prompt for LLM:', prompt);
+            // console.log("---------------------------------------------");
             const llmResponse = yield (0, invokellm_1.invokeLLM)(prompt);
-            console.log("---------------------------------------------");
-            console.log('LLM response:', llmResponse);
-            console.log("---------------------------------------------");
+            // console.log("---------------------------------------------");
+            // console.log('LLM response:', llmResponse);
+            // console.log("---------------------------------------------");
             const fixedJson = (0, fix_json_1.fixJsonStructure)(llmResponse);
             if (!fixedJson)
                 return res.status(422).json({ error: 'LLM output was not valid JSON.' });
             console.log(fixedJson);
             let questions = JSON.parse(fixedJson).questions;
-            console.log("Parsed questions:", questions);
+            // console.log("Parsed questions:", questions);
             // Remove extra questions if too many (preserve only the first numOfQuestions)
             if (questions.length > numOfQuestions) {
                 questions = questions.slice(0, numOfQuestions);
@@ -343,3 +344,54 @@ exports.generateQuizByPdf = [
         }
     }),
 ];
+const generateQuizByYoutube = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { youtubeUrl, numOfQuestions, questionTypes, difficulty, lang } = req.body;
+        if (!youtubeUrl) {
+            return res.status(400).json({ error: 'YouTube URL is required' });
+        }
+        // Step 1: Get transcript text
+        const transcriptText = yield (0, youtube_transcript_1.getTranscriptText)(youtubeUrl, lang);
+        console.log(transcriptText);
+        if (!transcriptText) {
+            return res.status(422).json({ error: 'Failed to retrieve transcript or transcript is empty.' });
+        }
+        // Step 2: Build prompt for LLM
+        const prompt = `
+You are a quiz generation AI.
+
+Generate exactly ${numOfQuestions} quiz questions from the following YouTube video transcript:
+
+---
+${transcriptText}
+---
+
+Use question types: ${Array.isArray(questionTypes) ? questionTypes.join(', ') : questionTypes}
+Difficulty: ${difficulty}
+
+Return ONLY a valid JSON array with each question object containing:
+type, content, options (if any), answer, explanation (optional), difficulty.
+`;
+        // Step 3: Invoke LLM
+        const llmResponse = yield (0, invokellm_1.invokeLLM)(prompt);
+        // Step 4: Fix JSON & parse
+        const fixedJson = (0, fix_json_1.fixJsonStructure)(llmResponse);
+        if (!fixedJson)
+            return res.status(422).json({ error: 'LLM output was not valid JSON.' });
+        const questions = JSON.parse(fixedJson);
+        // Step 5: Validate questions
+        if (!Array.isArray(questions) || questions.some(q => !validateQuestion(q))) {
+            return res.status(422).json({ error: 'Generated questions have invalid format.' });
+        }
+        // Step 6: Return generated quiz
+        return res.status(200).json({
+            noOfQuestions: questions.length,
+            questions,
+        });
+    }
+    catch (error) {
+        console.error('Error generating quiz from YouTube URL:', error);
+        res.status(500).json({ error: 'Failed to generate quiz from YouTube URL.' });
+    }
+});
+exports.generateQuizByYoutube = generateQuizByYoutube;

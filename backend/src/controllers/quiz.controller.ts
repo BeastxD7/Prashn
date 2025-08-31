@@ -4,6 +4,7 @@ import { invokeLLM } from '../llm/invokellm';
 import { fixJsonStructure } from "../utils/fix_json";
 import multer from 'multer';
 import pdfParse from 'pdf-parse';
+import { getTranscriptText } from "../utils/youtube-transcript";
 
 const userId = "aa922398-43d0-4ba7-98c2-a3dea9f767f4"
 
@@ -397,3 +398,62 @@ export const generateQuizByPdf = [
     }
   },
 ];
+
+export const generateQuizByYoutube = async (req: Request, res: Response) => {
+  try {
+    const { youtubeUrl, numOfQuestions, questionTypes, difficulty, lang } = req.body;
+
+    if (!youtubeUrl) {
+      return res.status(400).json({ error: 'YouTube URL is required' });
+    }
+
+    // Step 1: Get transcript text
+    const transcriptText = await getTranscriptText(youtubeUrl, lang);
+    console.log(transcriptText);
+    
+
+    if (!transcriptText || transcriptText.trim().length === 0) {
+      return res.status(422).json({ error: 'Failed to retrieve transcript or transcript is empty.' });
+    }
+
+    // Step 2: Build prompt for LLM
+    const prompt = `
+You are a quiz generation AI.
+
+Generate exactly ${numOfQuestions} quiz questions from the following YouTube video transcript:
+
+---
+${transcriptText}
+---
+
+Use question types: ${Array.isArray(questionTypes) ? questionTypes.join(', ') : questionTypes}
+Difficulty: ${difficulty}
+
+Return ONLY a valid JSON array with each question object containing:
+type, content, options (if any), answer, explanation (optional), difficulty.
+`;
+
+    // Step 3: Invoke LLM
+    const llmResponse = await invokeLLM(prompt);
+
+    // Step 4: Fix JSON & parse
+    const fixedJson = fixJsonStructure(llmResponse);
+    if (!fixedJson) return res.status(422).json({ error: 'LLM output was not valid JSON.' });
+
+    const questions = JSON.parse(fixedJson);
+
+    // Step 5: Validate questions
+    if (!Array.isArray(questions) || questions.some(q => !validateQuestion(q))) {
+      return res.status(422).json({ error: 'Generated questions have invalid format.' });
+    }
+
+    // Step 6: Return generated quiz
+    return res.status(200).json({
+      noOfQuestions: questions.length,
+      questions,
+    });
+  } catch (error) {
+    console.error('Error generating quiz from YouTube URL:', error);
+    res.status(500).json({ error: 'Failed to generate quiz from YouTube URL.' });
+  }
+};

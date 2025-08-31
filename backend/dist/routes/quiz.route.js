@@ -8,4 +8,5 @@ QuizRouter.post('/generate-quiz-by-text', quiz_controller_1.generateQuizByText);
 QuizRouter.post('/save-quiz', quiz_controller_1.saveQuiz);
 QuizRouter.post('/edit-quiz-questions', quiz_controller_1.editQuizQuestionsOnly);
 QuizRouter.post('/generate-quiz-by-pdf', quiz_controller_1.generateQuizByPdf);
+QuizRouter.post('/generate-quiz-by-youtube', quiz_controller_1.generateQuizByYoutube);
 exports.default = QuizRouter;

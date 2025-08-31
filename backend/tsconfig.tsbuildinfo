@@ -1,1 +1,1 @@
-{"root":["./src/app.ts","./src/controllers/quiz.controller.ts","./src/db/prisma.ts","./src/llm/invokellm.ts","./src/routes/quiz.route.ts","./src/routes/user.route.ts","./src/utils/fix_json.ts"],"version":"5.9.2"}
+{"root":["./src/app.ts","./src/controllers/quiz.controller.ts","./src/db/prisma.ts","./src/llm/invokellm.ts","./src/routes/quiz.route.ts","./src/routes/user.route.ts","./src/utils/fix_json.ts","./src/utils/youtube-transcript.ts"],"version":"5.9.2"}
