@@ -319,7 +319,11 @@ exports.generateQuizByPdf = [
             if (!fixedJson)
                 return res.status(422).json({ error: 'LLM output was not valid JSON.' });
             console.log(fixedJson);
-            const questions = JSON.parse(fixedJson);
+            let questions = JSON.parse(fixedJson);
+            // Remove extra questions if too many (preserve only the first numOfQuestions)
+            if (questions.length > numOfQuestions) {
+                questions = questions.slice(0, numOfQuestions);
+            }
             if (!Array.isArray(questions) || questions.some(q => !validateQuestion(q))) {
                 return res.status(422).json({ error: 'Generated quiz questions have invalid format.' });
             }

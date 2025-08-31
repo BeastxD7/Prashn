@@ -356,21 +356,26 @@ export const generateQuizByPdf = [
     ]
     `;
 
-      console.log("---------------------------------------------");
-      console.log('Generated prompt for LLM:', prompt);
-      console.log("---------------------------------------------");
+      // console.log("---------------------------------------------");
+      // console.log('Generated prompt for LLM:', prompt);
+      // console.log("---------------------------------------------");
       
       const llmResponse = await invokeLLM(prompt);
 
-      console.log("---------------------------------------------");
-      console.log('LLM response:', llmResponse);
-      console.log("---------------------------------------------");
+      // console.log("---------------------------------------------");
+      // console.log('LLM response:', llmResponse);
+      // console.log("---------------------------------------------");
 
       const fixedJson = fixJsonStructure(llmResponse);
       if (!fixedJson) return res.status(422).json({ error: 'LLM output was not valid JSON.' });
       console.log(fixedJson);
       
-      const questions = JSON.parse(fixedJson);
+      let questions = JSON.parse(fixedJson);
+
+      // Remove extra questions if too many (preserve only the first numOfQuestions)
+      if (questions.length > numOfQuestions) {
+        questions = questions.slice(0, numOfQuestions);
+      }
 
       if (!Array.isArray(questions) || questions.some(q => !validateQuestion(q))) {
         return res.status(422).json({ error: 'Generated quiz questions have invalid format.' });
