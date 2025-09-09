@@ -14,7 +14,13 @@ const youtube_transcript_1 = require("youtube-transcript");
 function getTranscriptText(url_1) {
     return __awaiter(this, arguments, void 0, function* (url, lang = 'en') {
         try {
-            youtube_transcript_1.YoutubeTranscript.fetchTranscript(url).then(console.log);
+            console.log(`Fetching transcript for YouTube URL: ${url}`);
+            const transcript = yield youtube_transcript_1.YoutubeTranscript.fetchTranscript(url, { lang });
+            console.log(`Transcript fetched successfully: ${JSON.stringify(transcript)}`);
+            // transcript is an array of { text, duration, offset, lang }
+            const plainText = transcript.map(item => item.text).join(' ');
+            console.log(`Transcript fetched successfully 2: ${plainText}`);
+            return plainText;
         }
         catch (err) {
             console.error('❌ Failed to fetch transcript:', err.message);

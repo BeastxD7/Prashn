@@ -353,7 +353,7 @@ const generateQuizByYoutube = (req, res) => __awaiter(void 0, void 0, void 0, fu
         // Step 1: Get transcript text
         const transcriptText = yield (0, youtube_transcript_1.getTranscriptText)(youtubeUrl, lang);
         console.log(transcriptText);
-        if (!transcriptText) {
+        if (!transcriptText || transcriptText.trim().length === 0) {
             return res.status(422).json({ error: 'Failed to retrieve transcript or transcript is empty.' });
         }
         // Step 2: Build prompt for LLM
