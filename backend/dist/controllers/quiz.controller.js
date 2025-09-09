@@ -19,7 +19,7 @@ const fix_json_1 = require("../utils/fix_json");
 const multer_1 = __importDefault(require("multer"));
 const pdf_parse_1 = __importDefault(require("pdf-parse"));
 const youtube_transcript_1 = require("../utils/youtube-transcript");
-const userId = "aa922398-43d0-4ba7-98c2-a3dea9f767f4";
+const userId = "2c146f96-6a04-4efd-b697-6f0fb60fcfbe";
 // Utility: Validate universal question schema (simplified)
 function validateQuestion(q) {
     if (!q.type || typeof q.type !== "string")
@@ -49,11 +49,11 @@ const generateQuizByText = (req, res) => __awaiter(void 0, void 0, void 0, funct
                 .status(400)
                 .json({ error: "Missing required fields: title, userId, content." });
         }
-        // if (content.length > 7000) {
-        //   return res
-        //     .status(400)
-        //     .json({ error: "Content exceeds maximum length of 7,000 characters." });
-        // }
+        if (content.length > 7000) {
+            return res
+                .status(400)
+                .json({ error: "Content exceeds maximum length of 7,000 characters." });
+        }
         // Enforce sensible question count limits
         const maxQuestions = 3000;
         const requestedQuestions = (preferences === null || preferences === void 0 ? void 0 : preferences.numOfQuestions) || 5;
@@ -353,25 +353,25 @@ const generateQuizByYoutube = (req, res) => __awaiter(void 0, void 0, void 0, fu
         // Step 1: Get transcript text
         const transcriptText = yield (0, youtube_transcript_1.getTranscriptText)(youtubeUrl, lang);
         console.log(transcriptText);
-        if (!transcriptText || transcriptText.trim().length === 0) {
+        if (!transcriptText || transcriptText.length === 0) {
             return res.status(422).json({ error: 'Failed to retrieve transcript or transcript is empty.' });
         }
         // Step 2: Build prompt for LLM
         const prompt = `
-You are a quiz generation AI.
+    You are a quiz generation AI.
 
-Generate exactly ${numOfQuestions} quiz questions from the following YouTube video transcript:
+    Generate exactly ${numOfQuestions} quiz questions from the following YouTube video transcript:
 
----
-${transcriptText}
----
+    ---
+    ${transcriptText}
+    ---
 
-Use question types: ${Array.isArray(questionTypes) ? questionTypes.join(', ') : questionTypes}
-Difficulty: ${difficulty}
+    Use question types: ${Array.isArray(questionTypes) ? questionTypes.join(', ') : questionTypes}
+    Difficulty: ${difficulty}
 
-Return ONLY a valid JSON array with each question object containing:
-type, content, options (if any), answer, explanation (optional), difficulty.
-`;
+    Return ONLY a valid JSON array with each question object containing:
+    type, content, options (if any), answer, explanation (optional), difficulty.
+    `;
         // Step 3: Invoke LLM
         const llmResponse = yield (0, invokellm_1.invokeLLM)(prompt);
         // Step 4: Fix JSON & parse

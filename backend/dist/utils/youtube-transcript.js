@@ -9,22 +9,56 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getTranscriptText = void 0;
+const youtube_caption_extractor_1 = require("youtube-caption-extractor");
+const getTranscriptText = (videoUrl_1, ...args_1) => __awaiter(void 0, [videoUrl_1, ...args_1], void 0, function* (videoUrl, lang = 'en') {
+    var _a;
+    try {
+        let videoID;
+        // Check for youtu.be short URL
+        const shortUrlMatch = videoUrl.match(/^https?:\/\/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+        if (shortUrlMatch) {
+            videoID = shortUrlMatch[1];
+        }
+        else {
+            // Fallback to standard URL
+            videoID = (_a = videoUrl.split('v=')[1]) === null || _a === void 0 ? void 0 : _a.split('&')[0];
+        }
+        if (!videoID) {
+            throw new Error('Invalid YouTube URL');
+        }
+        const subtitles = yield (0, youtube_caption_extractor_1.getSubtitles)({ videoID, lang });
+        console.log(`subtitles: ${JSON.stringify(subtitles)}`);
+        return subtitles;
+    }
+    catch (error) {
+        console.error('Error fetching subtitles:', error);
+        return [];
+    }
+});
 exports.getTranscriptText = getTranscriptText;
-const youtube_transcript_1 = require("youtube-transcript");
-function getTranscriptText(url_1) {
-    return __awaiter(this, arguments, void 0, function* (url, lang = 'en') {
-        try {
-            console.log(`Fetching transcript for YouTube URL: ${url}`);
-            const transcript = yield youtube_transcript_1.YoutubeTranscript.fetchTranscript(url, { lang });
-            console.log(`Transcript fetched successfully: ${JSON.stringify(transcript)}`);
-            // transcript is an array of { text, duration, offset, lang }
-            const plainText = transcript.map(item => item.text).join(' ');
-            console.log(`Transcript fetched successfully 2: ${plainText}`);
-            return plainText;
-        }
-        catch (err) {
-            console.error('❌ Failed to fetch transcript:', err.message);
-            return '';
-        }
-    });
-}
+const fetchVideoDetails = (videoID_1, ...args_1) => __awaiter(void 0, [videoID_1, ...args_1], void 0, function* (videoID, lang = 'en') {
+    try {
+        const details = yield (0, youtube_caption_extractor_1.getVideoDetails)({ videoID, lang });
+        console.log(details);
+        return details;
+    }
+    catch (error) {
+        console.error('Error fetching video details:', error);
+        throw error;
+    }
+});
+// export async function getTranscriptText(url:string, lang = 'en') {
+//   try {
+//     console.log(`Fetching transcript for YouTube URL: ${url}`);
+//     const transcript = await YoutubeTranscript.fetchTranscript(url, { lang });
+//     console.log(`Transcript fetched successfully: ${JSON.stringify(transcript)}`);
+//     // transcript is an array of { text, duration, offset, lang }
+//     const plainText = transcript.map(item => item.text).join(' ');
+//     console.log(`Transcript fetched successfully 2: ${plainText}`);
+//     return plainText;
+//   } catch (err:any) {
+//     console.error('❌ Failed to fetch transcript:', err.message);
+//     return '';
+//   }
+// }

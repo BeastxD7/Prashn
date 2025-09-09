@@ -8,7 +8,7 @@ const user_route_1 = __importDefault(require("./routes/user.route"));
 const quiz_route_1 = __importDefault(require("./routes/quiz.route"));
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
     res.json({ message: "Hello World!" });
 });
 app.use("/api/users", user_route_1.default);
