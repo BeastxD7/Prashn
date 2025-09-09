@@ -29,7 +29,7 @@ export const getTranscriptText = async (
     const subtitles = await getSubtitles({ videoID, lang });
     // Concatenate all 'text' values into a single string
     const transcriptText = subtitles.map(sub => sub.text).join(' ');
-    console.log(transcriptText);
+    // console.log(transcriptText);
     return transcriptText;
   } catch (error) {
     console.error('Error fetching subtitles:', error);
@@ -37,19 +37,19 @@ export const getTranscriptText = async (
   }
 };
 
-const fetchVideoDetails = async (
-  videoID: string,
-  lang = 'en'
-): Promise<VideoDetails> => {
-  try {
-    const details: VideoDetails = await getVideoDetails({ videoID, lang });
-    console.log(details);
-    return details;
-  } catch (error) {
-    console.error('Error fetching video details:', error);
-    throw error;
-  }
-};
+// const fetchVideoDetails = async (
+//   videoID: string,
+//   lang = 'en'
+// ): Promise<VideoDetails> => {
+//   try {
+//     const details: VideoDetails = await getVideoDetails({ videoID, lang });
+//     console.log(details);
+//     return details;
+//   } catch (error) {
+//     console.error('Error fetching video details:', error);
+//     throw error;
+//   }
+// };
 
 
 // export async function getTranscriptText(url:string, lang = 'en') {

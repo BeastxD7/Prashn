@@ -352,7 +352,7 @@ const generateQuizByYoutube = (req, res) => __awaiter(void 0, void 0, void 0, fu
         }
         // Step 1: Get transcript text
         const transcriptText = yield (0, youtube_transcript_1.getTranscriptText)(youtubeUrl, lang);
-        console.log(transcriptText);
+        // console.log(transcriptText);
         if (!transcriptText || transcriptText.length === 0) {
             return res.status(422).json({ error: 'Failed to retrieve transcript or transcript is empty.' });
         }
@@ -379,14 +379,18 @@ const generateQuizByYoutube = (req, res) => __awaiter(void 0, void 0, void 0, fu
         if (!fixedJson)
             return res.status(422).json({ error: 'LLM output was not valid JSON.' });
         const questions = JSON.parse(fixedJson);
+        console.log('PASSED BOSS');
+        console.log(questions);
         // Step 5: Validate questions
-        if (!Array.isArray(questions) || questions.some(q => !validateQuestion(q))) {
+        if (!questions ||
+            !Array.isArray(questions.questions) ||
+            questions.questions.some((q) => !validateQuestion(q))) {
             return res.status(422).json({ error: 'Generated questions have invalid format.' });
         }
         // Step 6: Return generated quiz
         return res.status(200).json({
             noOfQuestions: questions.length,
-            questions,
+            questions: questions.questions,
         });
     }
     catch (error) {

@@ -326,7 +326,7 @@ export const generateQuizByPdf = [
         return res.status(422).json({ error: 'Failed to extract text from PDF or PDF is empty.' });
       }
 
- const prompt = `
+const prompt = `
     You are a quiz generation AI.
 
     Generate exactly ${numOfQuestions} quiz questions based ONLY on the following content which is extracted from PDF.
@@ -410,7 +410,7 @@ export const generateQuizByYoutube = async (req: Request, res: Response) => {
 
     // Step 1: Get transcript text
     const transcriptText = await getTranscriptText(youtubeUrl, lang);
-    console.log(transcriptText);
+    // console.log(transcriptText);
     
 
     if (!transcriptText || transcriptText.length === 0) {
@@ -442,16 +442,25 @@ export const generateQuizByYoutube = async (req: Request, res: Response) => {
     if (!fixedJson) return res.status(422).json({ error: 'LLM output was not valid JSON.' });
 
     const questions = JSON.parse(fixedJson);
+    console.log('PASSED BOSS');
+    console.log(questions);
+    
+    
 
     // Step 5: Validate questions
-    if (!Array.isArray(questions) || questions.some(q => !validateQuestion(q))) {
+    if (
+      !questions ||
+      !Array.isArray(questions.questions) ||
+      questions.questions.some((q: any) => !validateQuestion(q))
+    ) {
       return res.status(422).json({ error: 'Generated questions have invalid format.' });
     }
+
 
     // Step 6: Return generated quiz
     return res.status(200).json({
       noOfQuestions: questions.length,
-      questions,
+      questions:questions.questions,
     });
   } catch (error) {
     console.error('Error generating quiz from YouTube URL:', error);

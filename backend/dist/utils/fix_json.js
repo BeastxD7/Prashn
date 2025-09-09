@@ -5,7 +5,7 @@ function fixJsonStructure(input) {
     try {
         // Quick check if input is valid JSON
         JSON.parse(input);
-        console.log('Input is valid JSON.\n');
+        console.log('Input is valid JSON from fixJsonStructure.\n');
         return input; // Already valid JSON
     }
     catch (_a) {

@@ -28,12 +28,14 @@ const getTranscriptText = (videoUrl_1, ...args_1) => __awaiter(void 0, [videoUrl
             throw new Error('Invalid YouTube URL');
         }
         const subtitles = yield (0, youtube_caption_extractor_1.getSubtitles)({ videoID, lang });
-        console.log(`subtitles: ${JSON.stringify(subtitles)}`);
-        return subtitles;
+        // Concatenate all 'text' values into a single string
+        const transcriptText = subtitles.map(sub => sub.text).join(' ');
+        // console.log(transcriptText);
+        return transcriptText;
     }
     catch (error) {
         console.error('Error fetching subtitles:', error);
-        return [];
+        return '';
     }
 });
 exports.getTranscriptText = getTranscriptText;
