@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { editQuizQuestionsOnly, generateQuizByPdf, generateQuizByText, generateQuizByYoutube, saveQuiz } from "../controllers/quiz.controller";
+import { editQuizQuestionsOnly, generateQuizByPdf, generateQuizByText, generateQuizByYoutube,generateQuizByAudio, saveQuiz } from "../controllers/quiz.controller";
 
 const QuizRouter = Router();
 
@@ -9,5 +9,6 @@ QuizRouter.post('/save-quiz', saveQuiz);
 QuizRouter.post('/edit-quiz-questions', editQuizQuestionsOnly);
 QuizRouter.post('/generate-quiz-by-pdf', generateQuizByPdf);
 QuizRouter.post('/generate-quiz-by-youtube', generateQuizByYoutube);
+QuizRouter.post('/generate-quiz-by-audio', generateQuizByAudio);
 
 export default QuizRouter;

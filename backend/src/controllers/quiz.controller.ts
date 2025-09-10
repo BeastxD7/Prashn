@@ -1,10 +1,12 @@
 import { Request, Response } from "express";
 import prisma from "../db/prisma";
-import { invokeLLM } from '../llm/invokellm';
+import { invokeLLM } from '../ai_models/quizllm';
 import { fixJsonStructure } from "../utils/fix_json";
 import multer from 'multer';
 import pdfParse from 'pdf-parse';
 import { getTranscriptText } from "../utils/youtube-transcript";
+import { transcribe } from "../ai_models/whisper";
+import { text } from "stream/consumers";
 
 const userId = "2c146f96-6a04-4efd-b697-6f0fb60fcfbe"
 
@@ -21,6 +23,28 @@ function validateQuestion(q: any): boolean {
   return true;
 }
 
+
+const upload = multer({
+  limits: { fileSize: 10 * 1024 * 1024 }, // limit file to 10MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype !== 'application/pdf') {
+      return cb(new Error('Only PDF files are allowed'));
+    }
+    cb(null, true);
+  },
+});
+
+const audioUpload = multer({
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/mp4', 'video/mp4'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error('Only MP3, MP4, or WAV files are allowed'));
+    }
+    cb(null, true);
+  },
+}).single('audioFile');
+
 // TODO: Zod validations for all the things!
 
 // POST /api/generate-quiz-by-text
@@ -35,7 +59,7 @@ export const generateQuizByText = async (req: Request, res: Response) => {
         .status(400)
         .json({ error: "Missing required fields: title, userId, content." });
     }
-    
+
     if (content.length > 7000) {
       return res
         .status(400)
@@ -69,9 +93,8 @@ export const generateQuizByText = async (req: Request, res: Response) => {
     ${content}
     ---
 
-    Use question types: ${
-          preferences?.questionTypes?.join(", ") || "MCQ, SHORT_ANSWER"
-        }
+    Use question types: ${preferences?.questionTypes?.join(", ") || "MCQ, SHORT_ANSWER"
+      }
     Difficulty level: ${preferences?.difficulty || "MEDIUM"}
 
     Example format:
@@ -87,24 +110,14 @@ export const generateQuizByText = async (req: Request, res: Response) => {
     ]
     `;
 
-    // Call LLM with temperature 0 to reduce randomness
-    console.log(
-      "------------------------------------------------------------------------"
-    );
-    console.log(prompt);
-    console.log(
-      "------------------------------------------------------------------------"
-    );
+
+    if (prompt.trim().length > 100000) {
+      res.status(400).json({ error: "Text length exceeds maximum limit of 100,000 characters." });
+      return;
+    }
 
     const llmResponse = await invokeLLM(prompt);
 
-    console.log(
-      "------------------------------------------------------------------------"
-    );
-    console.log(llmResponse);
-    console.log(
-      "------------------------------------------------------------------------"
-    );
 
     // Fix JSON and parse
     const fixedJson = fixJsonStructure(llmResponse);
@@ -196,8 +209,8 @@ export const saveQuiz = async (req: Request, res: Response) => {
               quizId: createdQuiz.id,
               type: q.type,
               content: q.content,
-              options: q.options ,
-              answer:JSON.stringify(q.answer),
+              options: q.options,
+              answer: JSON.stringify(q.answer),
               explanation: q.explanation || null,
               difficulty: q.difficulty || "MEDIUM",
             },
@@ -215,10 +228,9 @@ export const saveQuiz = async (req: Request, res: Response) => {
   }
 };
 
-
 export const editQuizQuestionsOnly = async (req: Request, res: Response) => {
   try {
-    
+
     // TODO: userId should come from Request Auth Middleware
     const { questions } = req.body;
 
@@ -295,17 +307,6 @@ export const editQuizQuestionsOnly = async (req: Request, res: Response) => {
   }
 };
 
-const upload = multer({
-  limits: { fileSize: 10 * 1024 * 1024 }, // limit file to 10MB
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype !== 'application/pdf') {
-      return cb(new Error('Only PDF files are allowed'));
-    }
-    cb(null, true);
-  },
-});
-
-
 export const generateQuizByPdf = [
   upload.single('pdfFile'),
   async (req: Request, res: Response) => {
@@ -326,7 +327,7 @@ export const generateQuizByPdf = [
         return res.status(422).json({ error: 'Failed to extract text from PDF or PDF is empty.' });
       }
 
-const prompt = `
+      const prompt = `
     You are a quiz generation AI.
 
     Generate exactly ${numOfQuestions} quiz questions based ONLY on the following content which is extracted from PDF.
@@ -340,8 +341,7 @@ const prompt = `
     ${content}
     ---
 
-    Use question types: ${
-          questionTypes?.join(", ") || "MCQ, SHORT_ANSWER"
+    Use question types: ${questionTypes?.join(", ") || "MCQ, SHORT_ANSWER"
         }
     Difficulty level: ${difficulty || "MEDIUM"}
 
@@ -358,36 +358,35 @@ const prompt = `
     ]
     `;
 
-      // console.log("---------------------------------------------");
-      // console.log('Generated prompt for LLM:', prompt);
-      // console.log("---------------------------------------------");
-      
+
+      if (prompt.trim().length > 100000) {
+        res.status(400).json({ error: "PDF Text exceeds maximum length of 100,000 characters." });
+        return;
+      }
+
       const llmResponse = await invokeLLM(prompt);
 
-      // console.log("---------------------------------------------");
-      // console.log('LLM response:', llmResponse);
-      // console.log("---------------------------------------------");
 
       const fixedJson = fixJsonStructure(llmResponse);
       if (!fixedJson) return res.status(422).json({ error: 'LLM output was not valid JSON.' });
       console.log(fixedJson);
-      
-      let questions = JSON.parse(fixedJson).questions;
 
-      // console.log("Parsed questions:", questions);
+      let questions = JSON.parse(fixedJson);
+
+      console.log("Parsed questions:", questions);
+      console.log(`Number of questions generated: ${questions.questions.length}`);
+
 
       // Remove extra questions if too many (preserve only the first numOfQuestions)
       if (questions.length > numOfQuestions) {
-        questions = questions.slice(0, numOfQuestions);
-      }
+        console.log(`Truncating questions from ${questions.questions.length} to ${numOfQuestions}`);
 
-      if (!Array.isArray(questions) || questions.some(q => !validateQuestion(q))) {
-        return res.status(422).json({ error: 'Generated quiz questions have invalid format.' });
+        questions.questions = questions.questions.slice(0, numOfQuestions);
       }
 
       res.status(200).json({
         quiz: { title, description, userId },
-        noOfQuestions: questions.length,
+        noOfQuestions: questions.questions.length,
         questions,
       });
     } catch (error) {
@@ -402,16 +401,20 @@ const prompt = `
 
 export const generateQuizByYoutube = async (req: Request, res: Response) => {
   try {
-    const { youtubeUrl, numOfQuestions, questionTypes, difficulty, lang } = req.body;
+    const { title, description, youtubeUrl, numOfQuestions, questionTypes, difficulty, lang } = req.body;
 
-    if (!youtubeUrl) {
-      return res.status(400).json({ error: 'YouTube URL is required' });
+    if (!youtubeUrl || !title || !numOfQuestions || !description) {
+      return res.status(400).json({ error: 'YouTube URL, title, and number of questions are required' });
     }
 
     // Step 1: Get transcript text
     const transcriptText = await getTranscriptText(youtubeUrl, lang);
     // console.log(transcriptText);
-    
+
+    if (transcriptText.trim().length > 100000) {
+      res.status(400).json({ error: "Youtube video transcript exceeds maximum length of 100,000 characters." });
+      return;
+    }
 
     if (!transcriptText || transcriptText.length === 0) {
       return res.status(422).json({ error: 'Failed to retrieve transcript or transcript is empty.' });
@@ -442,10 +445,9 @@ export const generateQuizByYoutube = async (req: Request, res: Response) => {
     if (!fixedJson) return res.status(422).json({ error: 'LLM output was not valid JSON.' });
 
     const questions = JSON.parse(fixedJson);
-    console.log('PASSED BOSS');
     console.log(questions);
-    
-    
+
+
 
     // Step 5: Validate questions
     if (
@@ -459,11 +461,111 @@ export const generateQuizByYoutube = async (req: Request, res: Response) => {
 
     // Step 6: Return generated quiz
     return res.status(200).json({
-      noOfQuestions: questions.length,
-      questions:questions.questions,
+      quiz: { title, description, userId },
+      noOfQuestions: questions.questions.length,
+      questions: questions.questions,
     });
   } catch (error) {
     console.error('Error generating quiz from YouTube URL:', error);
     res.status(500).json({ error: 'Failed to generate quiz from YouTube URL.' });
   }
 };
+
+export const generateQuizByAudio = async (req: Request, res: Response) => {
+
+  try {
+
+
+
+    audioUpload(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ error: err.message });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: 'Missing audio file upload.' });
+      }
+
+      console.log(req.file);
+      const { title, description, numOfQuestions, questionTypes, difficulty } = req.body;
+
+      if (!title || !numOfQuestions || !description || !req.file || !questionTypes || !difficulty) {
+        return res.status(400).json({ error: 'All fields are required in payload.' });
+      }
+
+
+      const transcriptText = await transcribe(req.file.buffer);
+
+      if (!transcriptText) {
+        return res.status(422).json({ error: 'Failed to transcribe audio.' });
+      }
+
+
+      if (transcriptText.trim().length > 100000) {
+        res.status(400).json({ error: "Audio text exceeds maximum length of 100,000 characters." });
+        return;
+      }
+
+const audioPrompt = `
+     You are a quiz generation AI.
+
+    Generate exactly ${numOfQuestions} quiz questions based ONLY on the following content which is extracted from PDF.
+    Do NOT generate fewer or more than ${numOfQuestions}.
+    Return ONLY a valid JSON array with exactly ${numOfQuestions} question objects, each with fields:
+    type, content, options (if applicable), answer, explanation (optional), difficulty.
+    Use ONLY the following content to create the questions:
+
+    Content:
+    ---
+    ${transcriptText}
+    ---
+
+    Use question types: ${questionTypes || "MCQ, SHORT_ANSWER"}
+    Difficulty level: ${difficulty || "MEDIUM"}
+
+    Example format:
+    [
+      {
+        "type": "MCQ",
+        "content": "Question text",
+        "options": ["Option 1", "Option 2"],
+        "answer": "Option 1",
+        "explanation": "Explanation text.",
+        "difficulty": "EASY"
+      }
+    ]
+    `;
+
+
+      const llmResponse = await invokeLLM(audioPrompt);
+
+      const fixedJson = fixJsonStructure(llmResponse);
+      if (!fixedJson) return res.status(422).json({ error: 'LLM output was not valid JSON.' });
+      console.log(fixedJson);
+
+      let questions = JSON.parse(fixedJson);
+
+      console.log("Parsed questions:", questions);
+      console.log(`Number of questions generated: ${questions.questions.length}`);
+
+
+      // Remove extra questions if too many (preserve only the first numOfQuestions)
+      if (questions.length > numOfQuestions) {
+        console.log(`Truncating questions from ${questions.length} to ${numOfQuestions}`);
+
+        questions = questions.slice(0, numOfQuestions);
+      }
+
+      res.status(200).json({
+        quiz: { title, description, userId },
+        noOfQuestions: questions.length,
+        questions,
+      });
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'Failed to generate quiz from Audio.' });
+
+  }
+
+}

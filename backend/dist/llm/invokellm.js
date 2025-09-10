@@ -14,6 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.invokeLLM = invokeLLM;
 const groq_sdk_1 = __importDefault(require("groq-sdk"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const groq = new groq_sdk_1.default();
 const default_model = "openai/gpt-oss-120b";
 function invokeLLM(prompt_1) {
