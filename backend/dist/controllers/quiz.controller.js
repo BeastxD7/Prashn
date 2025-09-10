@@ -14,12 +14,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateQuizByAudio = exports.generateQuizByYoutube = exports.generateQuizByPdf = exports.editQuizQuestionsOnly = exports.saveQuiz = exports.generateQuizByText = void 0;
 const prisma_1 = __importDefault(require("../db/prisma"));
-const quizllm_1 = require("../ai_models/quizllm");
+const quizllm_1 = require("../aiModels/quizllm");
 const fix_json_1 = require("../utils/fix_json");
 const multer_1 = __importDefault(require("multer"));
 const pdf_parse_1 = __importDefault(require("pdf-parse"));
 const youtube_transcript_1 = require("../utils/youtube-transcript");
-const whisper_1 = require("../ai_models/whisper");
+const whisper_1 = require("../aiModels/whisper");
 const userId = "2c146f96-6a04-4efd-b697-6f0fb60fcfbe";
 // Utility: Validate universal question schema (simplified)
 function validateQuestion(q) {
@@ -57,7 +57,6 @@ const audioUpload = (0, multer_1.default)({
     },
 }).single('audioFile');
 // TODO: Zod validations for all the things!
-// POST /api/generate-quiz-by-text
 const generateQuizByText = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -154,7 +153,6 @@ const generateQuizByText = (req, res) => __awaiter(void 0, void 0, void 0, funct
     }
 });
 exports.generateQuizByText = generateQuizByText;
-// POST /api/save-quiz
 const saveQuiz = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // TODO: userId should come from Request Auth Middleware

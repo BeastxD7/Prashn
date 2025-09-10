@@ -1,12 +1,11 @@
 import { Request, Response } from "express";
 import prisma from "../db/prisma";
-import { invokeLLM } from '../ai_models/quizllm';
+import { invokeLLM } from '../aiModels/quizllm';
 import { fixJsonStructure } from "../utils/fix_json";
 import multer from 'multer';
 import pdfParse from 'pdf-parse';
 import { getTranscriptText } from "../utils/youtube-transcript";
-import { transcribe } from "../ai_models/whisper";
-import { text } from "stream/consumers";
+import { transcribe } from "../aiModels/whisper";
 
 const userId = "2c146f96-6a04-4efd-b697-6f0fb60fcfbe"
 
@@ -22,7 +21,6 @@ function validateQuestion(q: any): boolean {
     return false;
   return true;
 }
-
 
 const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // limit file to 10MB
@@ -47,7 +45,7 @@ const audioUpload = multer({
 
 // TODO: Zod validations for all the things!
 
-// POST /api/generate-quiz-by-text
+
 export const generateQuizByText = async (req: Request, res: Response) => {
   try {
     // TODO: userId should come from Request Auth Middleware
@@ -159,7 +157,6 @@ export const generateQuizByText = async (req: Request, res: Response) => {
   }
 };
 
-// POST /api/save-quiz
 export const saveQuiz = async (req: Request, res: Response) => {
   try {
     // TODO: userId should come from Request Auth Middleware
@@ -474,8 +471,6 @@ export const generateQuizByYoutube = async (req: Request, res: Response) => {
 export const generateQuizByAudio = async (req: Request, res: Response) => {
 
   try {
-
-
 
     audioUpload(req, res, async (err) => {
       if (err) {
