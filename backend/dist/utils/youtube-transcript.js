@@ -39,17 +39,19 @@ const getTranscriptText = (videoUrl_1, ...args_1) => __awaiter(void 0, [videoUrl
     }
 });
 exports.getTranscriptText = getTranscriptText;
-const fetchVideoDetails = (videoID_1, ...args_1) => __awaiter(void 0, [videoID_1, ...args_1], void 0, function* (videoID, lang = 'en') {
-    try {
-        const details = yield (0, youtube_caption_extractor_1.getVideoDetails)({ videoID, lang });
-        console.log(details);
-        return details;
-    }
-    catch (error) {
-        console.error('Error fetching video details:', error);
-        throw error;
-    }
-});
+// const fetchVideoDetails = async (
+//   videoID: string,
+//   lang = 'en'
+// ): Promise<VideoDetails> => {
+//   try {
+//     const details: VideoDetails = await getVideoDetails({ videoID, lang });
+//     console.log(details);
+//     return details;
+//   } catch (error) {
+//     console.error('Error fetching video details:', error);
+//     throw error;
+//   }
+// };
 // export async function getTranscriptText(url:string, lang = 'en') {
 //   try {
 //     console.log(`Fetching transcript for YouTube URL: ${url}`);
