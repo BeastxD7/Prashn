@@ -1,8 +1,9 @@
 import z from "zod";
 
-export const GenerateQuizByVideoSchema = z.object({
-  videoUrl: z.string().url(),
-  numQuestions: z.number().min(1).max(20).optional().default(5),
-  difficulty: z.enum(["easy", "medium", "hard"]).optional().default("medium"),
-  topic: z.string().optional().default("General"),
+export const CreateUserSchema = z.object({
+  firstName: z.string().min(2).max(100),
+  lastName: z.string().min(2).max(100),
+  username: z.string().min(3).max(50),
+  email: z.string().email(),
 });
+

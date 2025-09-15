@@ -1,18 +1,23 @@
 import { Request, Response } from "express";
 import prisma from "../db/prisma";
+import { safeParse } from "zod";
+import { CreateUserSchema } from "../zodSchemas/user";
 
 
 
 // Create a new user
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, username, email } = req.body;
+    const { data , error } = CreateUserSchema.safeParse(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
     const newUser = await prisma.user.create({
-      data: { firstName, lastName, username, email },
+      data: { firstName: data.firstName, lastName: data.lastName, username: data.username, email: data.email },
     });
     res.status(201).json(newUser);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to create user' });
+  } catch (error:any) {
+    res.status(500).json({ message: 'Failed to create user', error:error.message});
   }
 };
 

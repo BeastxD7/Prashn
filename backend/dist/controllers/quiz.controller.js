@@ -20,6 +20,7 @@ const multer_1 = __importDefault(require("multer"));
 const pdf_parse_1 = __importDefault(require("pdf-parse"));
 const youtube_transcript_1 = require("../utils/youtube-transcript");
 const whisper_1 = require("../aiModels/whisper");
+const quiz_1 = require("../zodSchemas/quiz");
 const userId = "2c146f96-6a04-4efd-b697-6f0fb60fcfbe";
 // Utility: Validate universal question schema (simplified)
 function validateQuestion(q) {
@@ -61,7 +62,11 @@ const generateQuizByText = (req, res) => __awaiter(void 0, void 0, void 0, funct
     var _a;
     try {
         // TODO: userId should come from Request Auth Middleware
-        const { title, description, content, preferences } = req.body;
+        const { data, error } = quiz_1.QuizbyTextSchema.safeParse(req.body);
+        if (error) {
+            return res.status(400).json({ error: error.issues });
+        }
+        const { title, description, content, preferences } = data;
         // Validate required fields
         if (!title || !content) {
             return res
@@ -74,7 +79,7 @@ const generateQuizByText = (req, res) => __awaiter(void 0, void 0, void 0, funct
                 .json({ error: "Content exceeds maximum length of 7,000 characters." });
         }
         // Enforce sensible question count limits
-        const maxQuestions = 3000;
+        const maxQuestions = 30;
         const requestedQuestions = (preferences === null || preferences === void 0 ? void 0 : preferences.numOfQuestions) || 5;
         const numOfQuestions = Math.min(requestedQuestions, maxQuestions);
         if (content.length < numOfQuestions * 100) {
@@ -126,13 +131,6 @@ const generateQuizByText = (req, res) => __awaiter(void 0, void 0, void 0, funct
                 .json({ error: "Invalid JSON output from LLM and fix failed." });
         }
         let questions = JSON.parse(fixedJson);
-        // Validate array of questions
-        if (!Array.isArray(questions) ||
-            questions.some((q) => !validateQuestion(q))) {
-            return res
-                .status(422)
-                .json({ error: "LLM returned invalid question format." });
-        }
         // Enforce exact number of questions (truncate if too many)
         if (questions.length > numOfQuestions) {
             questions = questions.slice(0, numOfQuestions);
@@ -143,7 +141,7 @@ const generateQuizByText = (req, res) => __awaiter(void 0, void 0, void 0, funct
         }
         res.status(200).json({
             quiz: { title, description, userId },
-            noOfQuestions: questions.length,
+            noOfQuestions: questions.questions.length,
             questions,
         });
     }

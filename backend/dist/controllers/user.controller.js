@@ -14,17 +14,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUserById = exports.updateUserById = exports.getUserById = exports.getAllUsers = exports.createUser = void 0;
 const prisma_1 = __importDefault(require("../db/prisma"));
+const user_1 = require("../zodSchemas/user");
 // Create a new user
 const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { firstName, lastName, username, email } = req.body;
+        const { data, error } = user_1.CreateUserSchema.safeParse(req.body);
+        if (error) {
+            return res.status(400).json({ error: error.message });
+        }
         const newUser = yield prisma_1.default.user.create({
-            data: { firstName, lastName, username, email },
+            data: { firstName: data.firstName, lastName: data.lastName, username: data.username, email: data.email },
         });
         res.status(201).json(newUser);
     }
     catch (error) {
-        res.status(500).json({ error: 'Failed to create user' });
+        res.status(500).json({ message: 'Failed to create user', error: error.message });
     }
 });
 exports.createUser = createUser;

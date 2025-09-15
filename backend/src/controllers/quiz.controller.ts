@@ -6,6 +6,7 @@ import multer from 'multer';
 import pdfParse from 'pdf-parse';
 import { getTranscriptText } from "../utils/youtube-transcript";
 import { transcribe } from "../aiModels/whisper";
+import { QuizbyTextSchema } from "../zodSchemas/quiz";
 
 const userId = "2c146f96-6a04-4efd-b697-6f0fb60fcfbe"
 
@@ -49,8 +50,12 @@ const audioUpload = multer({
 export const generateQuizByText = async (req: Request, res: Response) => {
   try {
     // TODO: userId should come from Request Auth Middleware
-    const { title, description, content, preferences } = req.body;
+    const {data, error} = QuizbyTextSchema.safeParse(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.issues });
+    }
 
+    const {title, description, content, preferences} = data;
     // Validate required fields
     if (!title || !content) {
       return res
@@ -65,7 +70,7 @@ export const generateQuizByText = async (req: Request, res: Response) => {
     }
 
     // Enforce sensible question count limits
-    const maxQuestions = 3000;
+    const maxQuestions = 30;
     const requestedQuestions = preferences?.numOfQuestions || 5;
     const numOfQuestions = Math.min(requestedQuestions, maxQuestions);
 
@@ -126,16 +131,7 @@ export const generateQuizByText = async (req: Request, res: Response) => {
     }
     let questions = JSON.parse(fixedJson);
 
-    // Validate array of questions
-    if (
-      !Array.isArray(questions) ||
-      questions.some((q) => !validateQuestion(q))
-    ) {
-      return res
-        .status(422)
-        .json({ error: "LLM returned invalid question format." });
-    }
-
+    
     // Enforce exact number of questions (truncate if too many)
     if (questions.length > numOfQuestions) {
       questions = questions.slice(0, numOfQuestions);
@@ -148,7 +144,7 @@ export const generateQuizByText = async (req: Request, res: Response) => {
 
     res.status(200).json({
       quiz: { title, description, userId },
-      noOfQuestions: questions.length,
+      noOfQuestions: questions.questions.length,
       questions,
     });
   } catch (error) {
