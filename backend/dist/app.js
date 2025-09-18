@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const user_route_1 = __importDefault(require("./routes/user.route"));
 const quiz_route_1 = __importDefault(require("./routes/quiz.route"));
+const agent_route_1 = __importDefault(require("./routes/agent.route"));
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.get("/", (_req, res) => {
@@ -13,6 +14,7 @@ app.get("/", (_req, res) => {
 });
 app.use("/api/users", user_route_1.default);
 app.use("/api/quiz", quiz_route_1.default);
+app.use("/api/agent", agent_route_1.default);
 app.listen(3000, () => {
     console.log("Server is running on port 3000");
 });
