@@ -1,17 +1,8 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getTranscriptText = void 0;
 const youtube_caption_extractor_1 = require("youtube-caption-extractor");
-const getTranscriptText = (videoUrl_1, ...args_1) => __awaiter(void 0, [videoUrl_1, ...args_1], void 0, function* (videoUrl, lang = 'en') {
+const getTranscriptText = async (videoUrl, lang = 'en') => {
     var _a;
     try {
         let videoID;
@@ -27,7 +18,7 @@ const getTranscriptText = (videoUrl_1, ...args_1) => __awaiter(void 0, [videoUrl
         if (!videoID) {
             throw new Error('Invalid YouTube URL');
         }
-        const subtitles = yield (0, youtube_caption_extractor_1.getSubtitles)({ videoID, lang });
+        const subtitles = await (0, youtube_caption_extractor_1.getSubtitles)({ videoID, lang });
         // Concatenate all 'text' values into a single string
         const transcriptText = subtitles.map(sub => sub.text).join(' ');
         // console.log(transcriptText);
@@ -37,7 +28,7 @@ const getTranscriptText = (videoUrl_1, ...args_1) => __awaiter(void 0, [videoUrl
         console.error('Error fetching subtitles:', error);
         return '';
     }
-});
+};
 exports.getTranscriptText = getTranscriptText;
 // const fetchVideoDetails = async (
 //   videoID: string,

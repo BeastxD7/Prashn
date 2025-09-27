@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -58,7 +49,7 @@ const audioUpload = (0, multer_1.default)({
     },
 }).single('audioFile');
 // TODO: Zod validations for all the things!
-const generateQuizByText = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const generateQuizByText = async (req, res) => {
     var _a;
     try {
         // TODO: userId should come from Request Auth Middleware
@@ -122,7 +113,7 @@ const generateQuizByText = (req, res) => __awaiter(void 0, void 0, void 0, funct
             res.status(400).json({ error: "Text length exceeds maximum limit of 100,000 characters." });
             return;
         }
-        const llmResponse = yield (0, quizllm_1.invokeLLM)(prompt);
+        const llmResponse = await (0, quizllm_1.invokeLLM)(prompt);
         // Fix JSON and parse
         const fixedJson = (0, fix_json_1.fixJsonStructure)(llmResponse);
         if (!fixedJson) {
@@ -149,9 +140,9 @@ const generateQuizByText = (req, res) => __awaiter(void 0, void 0, void 0, funct
         console.error("Error generating quiz:", error);
         res.status(500).json({ error: "Failed to generate quiz." });
     }
-});
+};
 exports.generateQuizByText = generateQuizByText;
-const saveQuiz = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const saveQuiz = async (req, res) => {
     try {
         // TODO: userId should come from Request Auth Middleware
         const { quiz, questions } = req.body;
@@ -172,15 +163,15 @@ const saveQuiz = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 .json({ error: "Invalid question data in request." });
         }
         // Save atomically with Prisma transaction
-        const result = yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
-            const createdQuiz = yield tx.quiz.create({
+        const result = await prisma_1.default.$transaction(async (tx) => {
+            const createdQuiz = await tx.quiz.create({
                 data: {
                     title: quiz.title,
                     description: quiz.description,
                     userId: userId,
                 },
             });
-            const savedQuestions = yield Promise.all(questions.map((q) => tx.question.create({
+            const savedQuestions = await Promise.all(questions.map((q) => tx.question.create({
                 data: {
                     quizId: createdQuiz.id,
                     type: q.type,
@@ -192,16 +183,16 @@ const saveQuiz = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 },
             })));
             return { quiz: createdQuiz, questions: savedQuestions };
-        }));
+        });
         res.status(201).json(result);
     }
     catch (error) {
         console.error("Error saving quiz:", error);
         res.status(500).json({ error: "Failed to save quiz." });
     }
-});
+};
 exports.saveQuiz = saveQuiz;
-const editQuizQuestionsOnly = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const editQuizQuestionsOnly = async (req, res) => {
     try {
         // TODO: userId should come from Request Auth Middleware
         const { questions } = req.body;
@@ -224,7 +215,7 @@ const editQuizQuestionsOnly = (req, res) => __awaiter(void 0, void 0, void 0, fu
         }
         const quizId = [...quizIds][0];
         // Verify ownership of the quiz
-        const quiz = yield prisma_1.default.quiz.findUnique({ where: { id: quizId } });
+        const quiz = await prisma_1.default.quiz.findUnique({ where: { id: quizId } });
         if (!quiz) {
             return res.status(404).json({ error: 'Quiz not found.' });
         }
@@ -232,7 +223,7 @@ const editQuizQuestionsOnly = (req, res) => __awaiter(void 0, void 0, void 0, fu
             return res.status(403).json({ error: 'Not authorized to update questions for this quiz.' });
         }
         // Fetch existing question IDs for this quiz
-        const existingQuestions = yield prisma_1.default.question.findMany({
+        const existingQuestions = await prisma_1.default.question.findMany({
             where: { quizId },
             select: { id: true },
         });
@@ -249,7 +240,7 @@ const editQuizQuestionsOnly = (req, res) => __awaiter(void 0, void 0, void 0, fu
             }
         }
         // Transactionally update all questions
-        const updatedQuestions = yield prisma_1.default.$transaction(questions.map((q) => prisma_1.default.question.update({
+        const updatedQuestions = await prisma_1.default.$transaction(questions.map((q) => prisma_1.default.question.update({
             where: { id: q.id },
             data: {
                 type: q.type,
@@ -266,11 +257,11 @@ const editQuizQuestionsOnly = (req, res) => __awaiter(void 0, void 0, void 0, fu
         console.error('Error updating quiz questions:', error);
         res.status(500).json({ error: 'Failed to update quiz questions.' });
     }
-});
+};
 exports.editQuizQuestionsOnly = editQuizQuestionsOnly;
 exports.generateQuizByPdf = [
     upload.single('pdfFile'),
-    (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    async (req, res) => {
         try {
             if (!req.file)
                 return res.status(400).json({ error: 'Missing PDF file upload' });
@@ -279,7 +270,7 @@ exports.generateQuizByPdf = [
             questionTypes = questionTypes ? questionTypes.split(',').map((s) => s.trim()) : ['MCQ', 'SHORT_ANSWER'];
             difficulty = difficulty || 'MEDIUM';
             numOfQuestions = numOfQuestions ? parseInt(numOfQuestions, 10) : 5;
-            const pdfData = yield (0, pdf_parse_1.default)(req.file.buffer);
+            const pdfData = await (0, pdf_parse_1.default)(req.file.buffer);
             const content = pdfData.text;
             if (!content || content.trim().length === 0) {
                 return res.status(422).json({ error: 'Failed to extract text from PDF or PDF is empty.' });
@@ -317,7 +308,7 @@ exports.generateQuizByPdf = [
                 res.status(400).json({ error: "PDF Text exceeds maximum length of 100,000 characters." });
                 return;
             }
-            const llmResponse = yield (0, quizllm_1.invokeLLM)(prompt);
+            const llmResponse = await (0, quizllm_1.invokeLLM)(prompt);
             const fixedJson = (0, fix_json_1.fixJsonStructure)(llmResponse);
             if (!fixedJson)
                 return res.status(422).json({ error: 'LLM output was not valid JSON.' });
@@ -343,16 +334,16 @@ exports.generateQuizByPdf = [
             }
             res.status(500).json({ error: 'Failed to generate quiz from PDF.' });
         }
-    }),
+    },
 ];
-const generateQuizByYoutube = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const generateQuizByYoutube = async (req, res) => {
     try {
         const { title, description, youtubeUrl, numOfQuestions, questionTypes, difficulty, lang } = req.body;
         if (!youtubeUrl || !title || !numOfQuestions || !description) {
             return res.status(400).json({ error: 'YouTube URL, title, and number of questions are required' });
         }
         // Step 1: Get transcript text
-        const transcriptText = yield (0, youtube_transcript_1.getTranscriptText)(youtubeUrl, lang);
+        const transcriptText = await (0, youtube_transcript_1.getTranscriptText)(youtubeUrl, lang);
         // console.log(transcriptText);
         if (transcriptText.trim().length > 100000) {
             res.status(400).json({ error: "Youtube video transcript exceeds maximum length of 100,000 characters." });
@@ -378,7 +369,7 @@ const generateQuizByYoutube = (req, res) => __awaiter(void 0, void 0, void 0, fu
     type, content, options (if any), answer, explanation (optional), difficulty.
     `;
         // Step 3: Invoke LLM
-        const llmResponse = yield (0, quizllm_1.invokeLLM)(prompt);
+        const llmResponse = await (0, quizllm_1.invokeLLM)(prompt);
         // Step 4: Fix JSON & parse
         const fixedJson = (0, fix_json_1.fixJsonStructure)(llmResponse);
         if (!fixedJson)
@@ -402,11 +393,11 @@ const generateQuizByYoutube = (req, res) => __awaiter(void 0, void 0, void 0, fu
         console.error('Error generating quiz from YouTube URL:', error);
         res.status(500).json({ error: 'Failed to generate quiz from YouTube URL.' });
     }
-});
+};
 exports.generateQuizByYoutube = generateQuizByYoutube;
-const generateQuizByAudio = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const generateQuizByAudio = async (req, res) => {
     try {
-        audioUpload(req, res, (err) => __awaiter(void 0, void 0, void 0, function* () {
+        audioUpload(req, res, async (err) => {
             if (err) {
                 return res.status(400).json({ error: err.message });
             }
@@ -418,7 +409,7 @@ const generateQuizByAudio = (req, res) => __awaiter(void 0, void 0, void 0, func
             if (!title || !numOfQuestions || !description || !req.file || !questionTypes || !difficulty) {
                 return res.status(400).json({ error: 'All fields are required in payload.' });
             }
-            const transcriptText = yield (0, whisper_1.transcribe)(req.file.buffer);
+            const transcriptText = await (0, whisper_1.transcribe)(req.file.buffer);
             if (!transcriptText) {
                 return res.status(422).json({ error: 'Failed to transcribe audio.' });
             }
@@ -455,7 +446,7 @@ const generateQuizByAudio = (req, res) => __awaiter(void 0, void 0, void 0, func
       }
     ]
     `;
-            const llmResponse = yield (0, quizllm_1.invokeLLM)(audioPrompt);
+            const llmResponse = await (0, quizllm_1.invokeLLM)(audioPrompt);
             const fixedJson = (0, fix_json_1.fixJsonStructure)(llmResponse);
             if (!fixedJson)
                 return res.status(422).json({ error: 'LLM output was not valid JSON.' });
@@ -473,11 +464,11 @@ const generateQuizByAudio = (req, res) => __awaiter(void 0, void 0, void 0, func
                 noOfQuestions: questions.length,
                 questions,
             });
-        }));
+        });
     }
     catch (error) {
         console.log(error);
         res.status(500).json({ error: 'Failed to generate quiz from Audio.' });
     }
-});
+};
 exports.generateQuizByAudio = generateQuizByAudio;
