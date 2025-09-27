@@ -53,6 +53,10 @@ const generateQuizByText = async (req, res) => {
     var _a;
     try {
         // TODO: userId should come from Request Auth Middleware
+        const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized: Missing userId" });
+        }
         const { data, error } = quiz_1.QuizbyTextSchema.safeParse(req.body);
         if (error) {
             return res.status(400).json({ error: error.issues });

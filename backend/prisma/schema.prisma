@@ -20,6 +20,7 @@ model User {
   lastName  String
   username  String    @unique
   email     String    @unique
+  password  String
   createdAt DateTime  @default(now())
   quizzes   Quiz[]
 }

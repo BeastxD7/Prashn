@@ -50,6 +50,13 @@ const audioUpload = multer({
 export const generateQuizByText = async (req: Request, res: Response) => {
   try {
     // TODO: userId should come from Request Auth Middleware
+
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized: Missing userId" });
+    }
+    
     const {data, error} = QuizbyTextSchema.safeParse(req.body);
     if (error) {
       return res.status(400).json({ error: error.issues });

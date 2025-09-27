@@ -3,9 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteUserById = exports.updateUserById = exports.getUserById = exports.getAllUsers = exports.createUser = void 0;
+exports.deleteUserById = exports.updateUserById = exports.getUserById = exports.getAllUsers = exports.loginUser = exports.createUser = void 0;
 const prisma_1 = __importDefault(require("../db/prisma"));
 const user_1 = require("../zodSchemas/user");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const dotenv_1 = __importDefault(require("dotenv"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+dotenv_1.default.config();
 // Create a new user
 const createUser = async (req, res) => {
     try {
@@ -13,8 +17,10 @@ const createUser = async (req, res) => {
         if (error) {
             return res.status(400).json({ error: error.message });
         }
+        const { firstName, lastName, username, email, password } = data;
+        const hashedPassword = await bcryptjs_1.default.hash(password, 10);
         const newUser = await prisma_1.default.user.create({
-            data: { firstName: data.firstName, lastName: data.lastName, username: data.username, email: data.email },
+            data: { firstName, lastName, username, email, password: hashedPassword },
         });
         res.status(201).json(newUser);
     }
@@ -23,6 +29,28 @@ const createUser = async (req, res) => {
     }
 };
 exports.createUser = createUser;
+const loginUser = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await prisma_1.default.user.findUnique({
+            where: { username },
+        });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const isPasswordValid = await bcryptjs_1.default.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Invalid password' });
+        }
+        const token = jsonwebtoken_1.default.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        res.status(200).json({ message: 'Login successful', token });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({ error: 'Failed to login user' });
+    }
+};
+exports.loginUser = loginUser;
 // Get all users
 const getAllUsers = async (req, res) => {
     try {

@@ -10,4 +10,5 @@ exports.CreateUserSchema = zod_1.default.object({
     lastName: zod_1.default.string().min(2).max(100),
     username: zod_1.default.string().min(3).max(50),
     email: zod_1.default.string().email(),
+    password: zod_1.default.string().min(6).max(100),
 });
