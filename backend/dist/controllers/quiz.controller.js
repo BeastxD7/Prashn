@@ -12,7 +12,7 @@ const pdf_parse_1 = __importDefault(require("pdf-parse"));
 const youtube_transcript_1 = require("../utils/youtube-transcript");
 const whisper_1 = require("../aiModels/whisper");
 const quiz_1 = require("../zodSchemas/quiz");
-const userId = "2c146f96-6a04-4efd-b697-6f0fb60fcfbe";
+const creditsUtil_1 = require("../utils/creditsUtil");
 // Utility: Validate universal question schema (simplified)
 function validateQuestion(q) {
     if (!q.type || typeof q.type !== "string")
@@ -52,12 +52,11 @@ const audioUpload = (0, multer_1.default)({
 const generateQuizByText = async (req, res) => {
     var _a;
     try {
-        // TODO: userId should come from Request Auth Middleware
         const userId = req.userId;
         if (!userId) {
             return res.status(401).json({ error: "Unauthorized: Missing userId" });
         }
-        const { data, error } = quiz_1.QuizbyTextSchema.safeParse(req.body);
+        const { data, error } = quiz_1.generateQuizByTextSchema.safeParse(req.body);
         if (error) {
             return res.status(400).json({ error: error.issues });
         }
@@ -76,7 +75,12 @@ const generateQuizByText = async (req, res) => {
         // Enforce sensible question count limits
         const maxQuestions = 30;
         const requestedQuestions = (preferences === null || preferences === void 0 ? void 0 : preferences.numOfQuestions) || 5;
-        const numOfQuestions = Math.min(requestedQuestions, maxQuestions);
+        const numOfQuestions = Math.min(requestedQuestions, maxQuestions + 1);
+        const requiredCredits = (0, creditsUtil_1.getRequiredCreditsForQuestions)("generateQuizByText", numOfQuestions);
+        const hasEnoughCredits = await (0, creditsUtil_1.checkAndDeductCredits)(userId, requiredCredits);
+        if (!hasEnoughCredits) {
+            return res.status(402).json({ error: "Insufficient credits to generate quiz.", requiredCredits });
+        }
         if (content.length < numOfQuestions * 100) {
             // Heuristic: Require at least ~100 chars per question
             return res.status(400).json({
@@ -89,7 +93,7 @@ const generateQuizByText = async (req, res) => {
 
     Generate exactly ${numOfQuestions} quiz questions based ONLY on the following content.
     Do NOT generate fewer or more than ${numOfQuestions}.
-    Return ONLY a valid JSON array with exactly ${numOfQuestions} question objects, each with fields:
+  Return ONLY a valid JSON array with exactly ${numOfQuestions} question objects, each with fields:
     type, content, options (if applicable), answer, explanation (optional), difficulty.
     Use ONLY the following content to create the questions:
 
@@ -138,6 +142,7 @@ const generateQuizByText = async (req, res) => {
             quiz: { title, description, userId },
             noOfQuestions: questions.questions.length,
             questions,
+            creditsCharged: requiredCredits,
         });
     }
     catch (error) {
@@ -172,7 +177,7 @@ const saveQuiz = async (req, res) => {
                 data: {
                     title: quiz.title,
                     description: quiz.description,
-                    userId: userId,
+                    userId: req.userId,
                 },
             });
             const savedQuestions = await Promise.all(questions.map((q) => tx.question.create({
@@ -223,7 +228,7 @@ const editQuizQuestionsOnly = async (req, res) => {
         if (!quiz) {
             return res.status(404).json({ error: 'Quiz not found.' });
         }
-        if (quiz.userId !== userId) {
+        if (quiz.userId !== req.userId) {
             return res.status(403).json({ error: 'Not authorized to update questions for this quiz.' });
         }
         // Fetch existing question IDs for this quiz
@@ -267,13 +272,33 @@ exports.generateQuizByPdf = [
     upload.single('pdfFile'),
     async (req, res) => {
         try {
+            const userId = req.userId;
+            if (!userId) {
+                return res.status(401).json({ error: "Unauthorized: Missing userId" });
+            }
             if (!req.file)
                 return res.status(400).json({ error: 'Missing PDF file upload' });
-            const { title, description } = req.body;
-            let { questionTypes, difficulty, numOfQuestions } = req.body;
-            questionTypes = questionTypes ? questionTypes.split(',').map((s) => s.trim()) : ['MCQ', 'SHORT_ANSWER'];
-            difficulty = difficulty || 'MEDIUM';
-            numOfQuestions = numOfQuestions ? parseInt(numOfQuestions, 10) : 5;
+            const parseResult = quiz_1.generateQuizByPdfSchema.safeParse(req.body);
+            if (!parseResult.success) {
+                return res.status(400).json({ error: parseResult.error.issues });
+            }
+            const { title, description } = parseResult.data;
+            const { questionTypes, difficulty, numOfQuestions } = parseResult.data;
+            const normalizedQuestionTypes = Array.isArray(questionTypes)
+                ? questionTypes
+                : [questionTypes];
+            const resolvedDifficulty = Array.isArray(difficulty)
+                ? difficulty[0]
+                : difficulty || 'MEDIUM';
+            const normalizedNumOfQuestions = numOfQuestions ? Number(numOfQuestions) : 5;
+            const sanitizedQuestions = Number.isFinite(normalizedNumOfQuestions) && normalizedNumOfQuestions > 0
+                ? Math.min(normalizedNumOfQuestions, 30)
+                : 5;
+            const requiredCredits = (0, creditsUtil_1.getRequiredCreditsForQuestions)("generateQuizByPdf", sanitizedQuestions);
+            const hasEnoughCredits = await (0, creditsUtil_1.checkAndDeductCredits)(userId, requiredCredits);
+            if (!hasEnoughCredits) {
+                return res.status(402).json({ error: "Insufficient credits to generate quiz.", requiredCredits });
+            }
             const pdfData = await (0, pdf_parse_1.default)(req.file.buffer);
             const content = pdfData.text;
             if (!content || content.trim().length === 0) {
@@ -282,9 +307,9 @@ exports.generateQuizByPdf = [
             const prompt = `
     You are a quiz generation AI.
 
-    Generate exactly ${numOfQuestions} quiz questions based ONLY on the following content which is extracted from PDF.
-    Do NOT generate fewer or more than ${numOfQuestions}.
-    Return ONLY a valid JSON array with exactly ${numOfQuestions} question objects, each with fields:
+  Generate exactly ${sanitizedQuestions} quiz questions based ONLY on the following content which is extracted from PDF.
+  Do NOT generate fewer or more than ${sanitizedQuestions}.
+    Return ONLY a valid JSON array with exactly ${sanitizedQuestions} question objects, each with fields:
     type, content, options (if applicable), answer, explanation (optional), difficulty.
     Use ONLY the following content to create the questions:
 
@@ -293,8 +318,8 @@ exports.generateQuizByPdf = [
     ${content}
     ---
 
-    Use question types: ${(questionTypes === null || questionTypes === void 0 ? void 0 : questionTypes.join(", ")) || "MCQ, SHORT_ANSWER"}
-    Difficulty level: ${difficulty || "MEDIUM"}
+  Use question types: ${(normalizedQuestionTypes === null || normalizedQuestionTypes === void 0 ? void 0 : normalizedQuestionTypes.join(", ")) || "MCQ, SHORT_ANSWER"}
+    Difficulty level: ${resolvedDifficulty || "MEDIUM"}
 
     Example format:
     [
@@ -321,14 +346,15 @@ exports.generateQuizByPdf = [
             console.log("Parsed questions:", questions);
             console.log(`Number of questions generated: ${questions.questions.length}`);
             // Remove extra questions if too many (preserve only the first numOfQuestions)
-            if (questions.length > numOfQuestions) {
-                console.log(`Truncating questions from ${questions.questions.length} to ${numOfQuestions}`);
-                questions.questions = questions.questions.slice(0, numOfQuestions);
+            if (questions.length > sanitizedQuestions) {
+                console.log(`Truncating questions from ${questions.questions.length} to ${sanitizedQuestions}`);
+                questions.questions = questions.questions.slice(0, sanitizedQuestions);
             }
             res.status(200).json({
-                quiz: { title, description, userId },
+                quiz: { title, description, userId: req.userId },
                 noOfQuestions: questions.questions.length,
                 questions,
+                creditsCharged: requiredCredits,
             });
         }
         catch (error) {
@@ -342,9 +368,22 @@ exports.generateQuizByPdf = [
 ];
 const generateQuizByYoutube = async (req, res) => {
     try {
+        const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized: Missing userId" });
+        }
         const { title, description, youtubeUrl, numOfQuestions, questionTypes, difficulty, lang } = req.body;
         if (!youtubeUrl || !title || !numOfQuestions || !description) {
             return res.status(400).json({ error: 'YouTube URL, title, and number of questions are required' });
+        }
+        const requestedQuestions = parseInt(numOfQuestions, 10);
+        const sanitizedQuestions = Number.isFinite(requestedQuestions) && requestedQuestions > 0
+            ? Math.min(requestedQuestions, 30)
+            : 5;
+        const requiredCredits = (0, creditsUtil_1.getRequiredCreditsForQuestions)("generateQuizByYoutube", sanitizedQuestions);
+        const hasEnoughCredits = await (0, creditsUtil_1.checkAndDeductCredits)(userId, requiredCredits);
+        if (!hasEnoughCredits) {
+            return res.status(402).json({ message: "Insufficient credits to generate quiz." });
         }
         // Step 1: Get transcript text
         const transcriptText = await (0, youtube_transcript_1.getTranscriptText)(youtubeUrl, lang);
@@ -360,13 +399,13 @@ const generateQuizByYoutube = async (req, res) => {
         const prompt = `
     You are a quiz generation AI.
 
-    Generate exactly ${numOfQuestions} quiz questions from the following YouTube video transcript:
+  Generate exactly ${sanitizedQuestions} quiz questions from the following YouTube video transcript:
 
     ---
     ${transcriptText}
     ---
 
-    Use question types: ${Array.isArray(questionTypes) ? questionTypes.join(', ') : questionTypes}
+  Use question types: ${Array.isArray(questionTypes) ? questionTypes.join(', ') : questionTypes}
     Difficulty: ${difficulty}
 
     Return ONLY a valid JSON array with each question object containing:
@@ -388,9 +427,10 @@ const generateQuizByYoutube = async (req, res) => {
         }
         // Step 6: Return generated quiz
         return res.status(200).json({
-            quiz: { title, description, userId },
+            quiz: { title, description, userId: req.userId },
             noOfQuestions: questions.questions.length,
             questions: questions.questions,
+            creditsCharged: requiredCredits,
         });
     }
     catch (error) {
@@ -401,6 +441,10 @@ const generateQuizByYoutube = async (req, res) => {
 exports.generateQuizByYoutube = generateQuizByYoutube;
 const generateQuizByAudio = async (req, res) => {
     try {
+        const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized: Missing userId" });
+        }
         audioUpload(req, res, async (err) => {
             if (err) {
                 return res.status(400).json({ error: err.message });
@@ -413,6 +457,15 @@ const generateQuizByAudio = async (req, res) => {
             if (!title || !numOfQuestions || !description || !req.file || !questionTypes || !difficulty) {
                 return res.status(400).json({ error: 'All fields are required in payload.' });
             }
+            const requestedQuestions = parseInt(numOfQuestions, 10);
+            const sanitizedQuestions = Number.isFinite(requestedQuestions) && requestedQuestions > 0
+                ? Math.min(requestedQuestions, 30)
+                : 5;
+            const requiredCredits = (0, creditsUtil_1.getRequiredCreditsForQuestions)("generateQuizByAudio", sanitizedQuestions);
+            const hasEnoughCredits = await (0, creditsUtil_1.checkAndDeductCredits)(userId, requiredCredits);
+            if (!hasEnoughCredits) {
+                return res.status(402).json({ error: "Insufficient credits to generate quiz." });
+            }
             const transcriptText = await (0, whisper_1.transcribe)(req.file.buffer);
             if (!transcriptText) {
                 return res.status(422).json({ error: 'Failed to transcribe audio.' });
@@ -424,9 +477,9 @@ const generateQuizByAudio = async (req, res) => {
             const audioPrompt = `
      You are a quiz generation AI.
 
-    Generate exactly ${numOfQuestions} quiz questions based ONLY on the following content which is extracted from PDF.
-    Do NOT generate fewer or more than ${numOfQuestions}.
-    Return ONLY a valid JSON array with exactly ${numOfQuestions} question objects, each with fields:
+  Generate exactly ${sanitizedQuestions} quiz questions based ONLY on the following content which is extracted from PDF.
+  Do NOT generate fewer or more than ${sanitizedQuestions}.
+    Return ONLY a valid JSON array with exactly ${sanitizedQuestions} question objects, each with fields:
     type, content, options (if applicable), answer, explanation (optional), difficulty.
     Use ONLY the following content to create the questions:
 
@@ -435,7 +488,7 @@ const generateQuizByAudio = async (req, res) => {
     ${transcriptText}
     ---
 
-    Use question types: ${questionTypes || "MCQ, SHORT_ANSWER"}
+  Use question types: ${questionTypes || "MCQ, SHORT_ANSWER"}
     Difficulty level: ${difficulty || "MEDIUM"}
 
     Example format:
@@ -459,14 +512,15 @@ const generateQuizByAudio = async (req, res) => {
             console.log("Parsed questions:", questions);
             console.log(`Number of questions generated: ${questions.questions.length}`);
             // Remove extra questions if too many (preserve only the first numOfQuestions)
-            if (questions.length > numOfQuestions) {
-                console.log(`Truncating questions from ${questions.length} to ${numOfQuestions}`);
-                questions = questions.slice(0, numOfQuestions);
+            if (questions.length > sanitizedQuestions) {
+                console.log(`Truncating questions from ${questions.length} to ${sanitizedQuestions}`);
+                questions = questions.slice(0, sanitizedQuestions);
             }
             res.status(200).json({
-                quiz: { title, description, userId },
+                quiz: { title, description, userId: req.userId },
                 noOfQuestions: questions.length,
                 questions,
+                creditsCharged: requiredCredits,
             });
         });
     }
