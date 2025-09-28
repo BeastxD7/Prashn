@@ -47,3 +47,15 @@ export const getRequiredCreditsForQuestions = (
     // Fallback to last tier (should not be reached when Infinity is used)
     return rule.tiers[rule.tiers.length - 1].credits;
 };
+
+
+export const refundCredits = async (userId: string, credits: number) => {
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: { credits: { increment: credits } },
+        });
+    } catch (error) {
+        console.error('Error refunding credits:', error);
+    }
+};

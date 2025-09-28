@@ -13,6 +13,7 @@ const youtube_transcript_1 = require("../utils/youtube-transcript");
 const whisper_1 = require("../aiModels/whisper");
 const quiz_1 = require("../zodSchemas/quiz");
 const creditsUtil_1 = require("../utils/creditsUtil");
+const music_metadata_1 = require("music-metadata");
 // Utility: Validate universal question schema (simplified)
 function validateQuestion(q) {
     if (!q.type || typeof q.type !== "string")
@@ -389,11 +390,12 @@ const generateQuizByYoutube = async (req, res) => {
         const transcriptText = await (0, youtube_transcript_1.getTranscriptText)(youtubeUrl, lang);
         // console.log(transcriptText);
         if (transcriptText.trim().length > 100000) {
-            res.status(400).json({ error: "Youtube video transcript exceeds maximum length of 100,000 characters." });
+            res.status(400).json({ error: "Youtube video transcript exceeds maximum length of 100,000 characters. Try adding a bit less duration video" });
             return;
         }
         if (!transcriptText || transcriptText.length === 0) {
-            return res.status(422).json({ error: 'Failed to retrieve transcript or transcript is empty.' });
+            await (0, creditsUtil_1.refundCredits)(userId, requiredCredits);
+            return res.status(422).json({ error: 'Your video doesn\'t have any subtitles/captions.' });
         }
         // Step 2: Build prompt for LLM
         const prompt = `
@@ -418,7 +420,7 @@ const generateQuizByYoutube = async (req, res) => {
         if (!fixedJson)
             return res.status(422).json({ error: 'LLM output was not valid JSON.' });
         const questions = JSON.parse(fixedJson);
-        console.log(questions);
+        // console.log(questions);
         // Step 5: Validate questions
         if (!questions ||
             !Array.isArray(questions.questions) ||
@@ -453,8 +455,17 @@ const generateQuizByAudio = async (req, res) => {
                 return res.status(400).json({ error: 'Missing audio file upload.' });
             }
             console.log(req.file);
+            // Get duration of audio in seconds
+            const metadata = await (0, music_metadata_1.parseBuffer)(req.file.buffer, req.file.mimetype);
+            const durationSeconds = metadata.format.duration;
+            console.log(`Audio duration: ${durationSeconds} seconds`);
+            // Restrict max duration (example: 10 minutes)
+            const maxDurationSeconds = 10 * 60;
+            if (durationSeconds && durationSeconds > maxDurationSeconds) {
+                return res.status(400).json({ error: `Audio exceeds max allowed duration of 10 minutes` });
+            }
             const { title, description, numOfQuestions, questionTypes, difficulty } = req.body;
-            if (!title || !numOfQuestions || !description || !req.file || !questionTypes || !difficulty) {
+            if (!title || !numOfQuestions || !req.file || !questionTypes || !difficulty) {
                 return res.status(400).json({ error: 'All fields are required in payload.' });
             }
             const requestedQuestions = parseInt(numOfQuestions, 10);
@@ -503,7 +514,13 @@ const generateQuizByAudio = async (req, res) => {
       }
     ]
     `;
-            const llmResponse = await (0, quizllm_1.invokeLLM)(audioPrompt);
+            let llmResponse;
+            if (numOfQuestions > 20) {
+                llmResponse = await (0, quizllm_1.invokeLLM)(audioPrompt, "openai/gpt-oss-20b");
+            }
+            else {
+                llmResponse = await (0, quizllm_1.invokeLLM)(audioPrompt);
+            }
             const fixedJson = (0, fix_json_1.fixJsonStructure)(llmResponse);
             if (!fixedJson)
                 return res.status(422).json({ error: 'LLM output was not valid JSON.' });

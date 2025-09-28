@@ -29,19 +29,20 @@ export const creditRules: Record<CreditRuleKey, CreditRule> = {
             { maxQuestions: 5, credits: 2 },
             { maxQuestions: 15, credits: 3 },
             { maxQuestions: 30, credits: 4 },
-            
         ],
     },
     generateQuizByYoutube: {
         tiers: [
             { maxQuestions: 5, credits: 2 },
-            { maxQuestions: Infinity, credits: 3 },
+            { maxQuestions: 15, credits: 3 },
+            { maxQuestions: 30, credits: 4 },
         ],
     },
     generateQuizByAudio: {
         tiers: [
-            { maxQuestions: 5, credits: 3 },
-            { maxQuestions: Infinity, credits: 4 },
+            { maxQuestions: 5, credits: 2 },
+            { maxQuestions: 15, credits: 3 },
+            { maxQuestions: 30, credits: 4 },
         ],
     },
 };

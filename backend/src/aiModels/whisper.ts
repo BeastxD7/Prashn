@@ -32,7 +32,7 @@ export async function transcribe(
     // Clean up the temp file
     fs.unlinkSync(tempPath);
 
-    console.log(`Transcription: ${transcription.text}`);
+    // console.log(`Transcription: ${transcription.text}`);
     return transcription.text;
   } catch (error) {
     console.error("Error during transcription:", error);

@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import e, { Request, Response } from "express";
 import prisma from "../db/prisma";
 import { invokeLLM } from '../aiModels/quizllm';
 import { fixJsonStructure } from "../utils/fix_json";
@@ -7,7 +7,8 @@ import pdfParse from 'pdf-parse';
 import { getTranscriptText } from "../utils/youtube-transcript";
 import { transcribe } from "../aiModels/whisper";
 import { generateQuizByPdfSchema, generateQuizByTextSchema } from "../zodSchemas/quiz";
-import { checkAndDeductCredits, getRequiredCreditsForQuestions } from "../utils/creditsUtil";
+import { checkAndDeductCredits, getRequiredCreditsForQuestions, refundCredits } from "../utils/creditsUtil";
+import { parseBuffer } from "music-metadata";
 
 // Utility: Validate universal question schema (simplified)
 function validateQuestion(q: any): boolean {
@@ -462,12 +463,13 @@ export const generateQuizByYoutube = async (req: Request, res: Response) => {
     // console.log(transcriptText);
 
     if (transcriptText.trim().length > 100000) {
-      res.status(400).json({ error: "Youtube video transcript exceeds maximum length of 100,000 characters." });
+      res.status(400).json({ error: "Youtube video transcript exceeds maximum length of 100,000 characters. Try adding a bit less duration video" });
       return;
     }
 
     if (!transcriptText || transcriptText.length === 0) {
-      return res.status(422).json({ error: 'Failed to retrieve transcript or transcript is empty.' });
+      await refundCredits(userId, requiredCredits);
+      return res.status(422).json({ error: 'Your video doesn\'t have any subtitles/captions.' });
     }
 
     // Step 2: Build prompt for LLM
@@ -495,7 +497,7 @@ export const generateQuizByYoutube = async (req: Request, res: Response) => {
     if (!fixedJson) return res.status(422).json({ error: 'LLM output was not valid JSON.' });
 
     const questions = JSON.parse(fixedJson);
-    console.log(questions);
+    // console.log(questions);
 
 
 
@@ -541,9 +543,21 @@ export const generateQuizByAudio = async (req: Request, res: Response) => {
       }
 
       console.log(req.file);
+
+      // Get duration of audio in seconds
+      const metadata = await parseBuffer(req.file.buffer, req.file.mimetype);
+      const durationSeconds = metadata.format.duration; 
+
+      console.log(`Audio duration: ${durationSeconds} seconds`);
+
+      // Restrict max duration (example: 10 minutes)
+      const maxDurationSeconds = 10 * 60;
+      if (durationSeconds && durationSeconds > maxDurationSeconds) {
+        return res.status(400).json({ error: `Audio exceeds max allowed duration of 10 minutes` });
+      }
       const { title, description, numOfQuestions, questionTypes, difficulty } = req.body;
 
-      if (!title || !numOfQuestions || !description || !req.file || !questionTypes || !difficulty) {
+      if (!title || !numOfQuestions  || !req.file || !questionTypes || !difficulty) {
         return res.status(400).json({ error: 'All fields are required in payload.' });
       }
 
@@ -603,7 +617,15 @@ const audioPrompt = `
     `;
 
 
-      const llmResponse = await invokeLLM(audioPrompt);
+      let llmResponse;
+    
+      if (numOfQuestions > 20) {
+        llmResponse = await invokeLLM(audioPrompt, "openai/gpt-oss-20b");
+      } else {
+        llmResponse = await invokeLLM(audioPrompt);
+      }
+
+      
 
       const fixedJson = fixJsonStructure(llmResponse);
       if (!fixedJson) return res.status(422).json({ error: 'LLM output was not valid JSON.' });

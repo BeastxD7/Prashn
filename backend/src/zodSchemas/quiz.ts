@@ -65,3 +65,46 @@ export const generateQuizByPdfSchema = z.object({
     }, z.number().min(1).max(30).optional())
     .default(5),
 });
+
+export const generateQuizByAudioSchema = z.object({
+  title: z.string().min(5).max(100),
+  description: z.string().min(10).max(300).optional(),
+  numOfQuestions: z
+    .preprocess((val) => {
+      if (typeof val === "string") {
+        const parsed = Number(val);
+        return Number.isNaN(parsed) ? val : parsed;
+      }
+      return val;
+    }, z.number().min(1).max(30).optional())
+    .default(5),
+  difficulty: z.string().transform(val => val.toLowerCase()).pipe(z.enum(["easy", "medium", "hard"])).optional().default("medium"),
+  questionTypes: z
+    .preprocess((val) => {
+      if (Array.isArray(val)) {
+        return val;
+      }
+      if (typeof val === "string") {
+        const trimmed = val.trim();
+        if (!trimmed) {
+          return undefined;
+        }
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        } catch (err) {
+          // fall back to comma-separated parsing
+          return trimmed
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+        }
+        return [trimmed];
+      }
+      return val;
+    }, z.array(z.nativeEnum(QuestionType)).optional())
+    .default([QuestionType.MCQ]),
+  });
+

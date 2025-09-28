@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRequiredCreditsForQuestions = exports.checkAndDeductCredits = void 0;
+exports.refundCredits = exports.getRequiredCreditsForQuestions = exports.checkAndDeductCredits = void 0;
 const prisma_1 = __importDefault(require("../db/prisma"));
 const credits_1 = require("../constants/credits");
 const checkAndDeductCredits = async (userId, requiredCredits) => {
@@ -39,3 +39,15 @@ const getRequiredCreditsForQuestions = (generatorKey, questionCount) => {
     return rule.tiers[rule.tiers.length - 1].credits;
 };
 exports.getRequiredCreditsForQuestions = getRequiredCreditsForQuestions;
+const refundCredits = async (userId, credits) => {
+    try {
+        await prisma_1.default.user.update({
+            where: { id: userId },
+            data: { credits: { increment: credits } },
+        });
+    }
+    catch (error) {
+        console.error('Error refunding credits:', error);
+    }
+};
+exports.refundCredits = refundCredits;

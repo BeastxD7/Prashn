@@ -1,8 +1,5 @@
 import {
   getSubtitles,
-  getVideoDetails,
-  Subtitle,
-  VideoDetails,
 } from 'youtube-caption-extractor';
 
 export const getTranscriptText = async (

@@ -25,7 +25,7 @@ async function transcribe(audioFileBuffer, model = default_model, mimetype = "au
         });
         // Clean up the temp file
         fs_1.default.unlinkSync(tempPath);
-        console.log(`Transcription: ${transcription.text}`);
+        // console.log(`Transcription: ${transcription.text}`);
         return transcription.text;
     }
     catch (error) {

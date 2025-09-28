@@ -11,6 +11,7 @@ const groq = new groq_sdk_1.default();
 const default_model = "meta-llama/llama-4-scout-17b-16e-instruct";
 async function invokeLLM(prompt, model = default_model) {
     var _a, _b;
+    console.log(`Invoking LLM with model: ${model}`);
     if (prompt.trim().length > 100000) {
         throw new Error("Prompt exceeds maximum length of 100,000 characters.");
     }

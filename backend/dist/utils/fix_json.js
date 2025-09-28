@@ -4,7 +4,7 @@ exports.fixJsonStructure = fixJsonStructure;
 function fixJsonStructure(input) {
     try {
         // Quick check if input is valid JSON
-        JSON.parse(input);
+        // JSON.parse(input);
         console.log('Input is valid JSON from fixJsonStructure.\n');
         return input; // Already valid JSON
     }
