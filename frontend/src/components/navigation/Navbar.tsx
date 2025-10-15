@@ -12,18 +12,22 @@ import {
 } from "@/components/ui/resizable-navbar";
 import { useState } from "react";
 import { ModeToggle } from "../mode-toggle";
+import { useNavigate } from "react-router-dom";
 export function NavbarDemo() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+
+    const navigate = useNavigate();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="relative w-full">
+    <div className="fixed w-full">
       <Navbar>
         {/* Desktop Navigation */}
         <NavBody>
           <NavbarLogo />
           <NavItems items={navItems} />
           <div className="flex items-center gap-4 z-50">
-            <NavbarButton variant="secondary">Login</NavbarButton>
+            <NavbarButton onClick={() => navigate("/login")} variant="secondary">Login</NavbarButton>
             <ModeToggle />
           </div>
         </NavBody>
@@ -58,7 +62,7 @@ export function NavbarDemo() {
                 variant="primary"
                 className="w-full"
               >
-                Lo  gin
+                Login
               </NavbarButton>
               <ModeToggle />
             </div>
