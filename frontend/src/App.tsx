@@ -1,8 +1,13 @@
 import { ThemeProvider } from "@/components/theme-provider"
 import { NavbarDemo } from "./components/navigation/Navbar"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
-import LoginPage from "./pages/Login"
+
 import HomePage from "./pages/Home"
+import { LoginPage } from "./pages/Auth/Login"
+import { RegisterPage } from "./pages/Auth/Register"
+import DashboardPage from "./pages/Dashboard"
+
+
 
 function App() {
 
@@ -14,7 +19,9 @@ function App() {
             <NavbarDemo />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/" element={<HomePage />} />
+              <Route path="/register" element={<RegisterPage />} />
             </Routes>
           </main>
         </ThemeProvider>
