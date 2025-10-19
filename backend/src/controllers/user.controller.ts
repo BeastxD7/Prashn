@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../db/prisma";
+import { Prisma } from "@prisma/client";
 import { CreateUserSchema } from "../zodSchemas/user";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
@@ -14,7 +15,9 @@ export const createUser = async (req: Request, res: Response) => {
   try {
     const { data , error } = CreateUserSchema.safeParse(req.body);
     if (error) {
-      return res.status(400).json({ error: error.message });
+      console.log(error);
+      return res.status(400).json({ status: false, error: error, message: 'Invalid user data' });
+      
     }
 
     const { firstName, lastName, username, email, password } = data;
@@ -24,9 +27,19 @@ export const createUser = async (req: Request, res: Response) => {
     const newUser = await prisma.user.create({
       data: { firstName, lastName, username, email, password: hashedPassword },
     });
-    res.status(201).json(newUser);
-  } catch (error:any) {
-    res.status(500).json({ message: 'Failed to create user', error:error.message});
+
+    if (!newUser) {
+      return res.status(400).json({ status: false, message: 'User creation failed' });
+    }
+
+    res.status(201).json({ status: true, message: 'User created successfully', user: newUser.username });
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      // Unique constraint failed (e.g., username or email already exists)
+      const target = (error.meta && (error.meta as any).target) || null;
+      return res.status(409).json({ status: false, message: `User already exists with same ${target}`, details: target });
+    }
+    res.status(500).json({ status: false, message: 'Failed to create user', error: error.message });
   }
 };
 
@@ -39,21 +52,21 @@ export const loginUser = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ status: false, error: 'User not found' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid password' });
+      return res.status(401).json({ status: false, error: 'Invalid password' });
     }
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '1h' });
 
-    res.status(200).json({ message: 'Login successful', token });
+    res.status(200).json({ status: true, message: 'Login successful', token });
   } catch (error) {
     console.log(error);
-    
-    res.status(500).json({ error: 'Failed to login user' });
+
+    res.status(500).json({ status: false, error: 'Failed to login user' });
   }
 };
 

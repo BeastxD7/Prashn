@@ -361,7 +361,7 @@ export const generateQuizByPdf = [
     You are a quiz generation AI.
 
   Generate exactly ${sanitizedQuestions} quiz questions based ONLY on the following content which is extracted from PDF.
-  Do NOT generate fewer or more than ${sanitizedQuestions}.
+    Do NOT generate fewer or more than ${sanitizedQuestions}.
     Return ONLY a valid JSON array with exactly ${sanitizedQuestions} question objects, each with fields:
     type, content, options (if applicable), answer, explanation (optional), difficulty.
     Use ONLY the following content to create the questions:
