@@ -52,12 +52,12 @@ export const loginUser = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(404).json({ status: false, error: 'User not found' });
+      return res.status(404).json({ status: false, message: "No user found with the given Credentials!", error: 'User not found' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ status: false, error: 'Invalid password' });
+      return res.status(401).json({ status: false, message: "username or password is incorrect", error: 'Invalid password' });
     }
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '1h' });
@@ -66,7 +66,7 @@ export const loginUser = async (req: Request, res: Response) => {
   } catch (error) {
     console.log(error);
 
-    res.status(500).json({ status: false, error: 'Failed to login user' });
+    res.status(500).json({ status: false,message:"Something went wrong | Server Error",  error: 'Failed to login user' });
   }
 };
 

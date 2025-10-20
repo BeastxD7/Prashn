@@ -2,10 +2,18 @@ import express from 'express'
 import UserRouter from './routes/user.route'
 import QuizRouter from './routes/quiz.route'
 import AgentRouter from './routes/agent.route'
+import cors from 'cors';
+
 
 
 const app = express()
-
+app.use(cors(
+    {
+        origin: 'http://localhost:5173', // Replace with your frontend URL
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        credentials: true,
+    }
+));
 app.use(express.json())
 
 app.get("/", (_req, res)=> {
