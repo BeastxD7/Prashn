@@ -35,18 +35,13 @@ export function RegisterForm() {
     try {
       const response = await api.user.register(data)
       if (response?.status) {
-        console.log("ooyyyy");
-        
         toast.success(response.data.message)
         form.reset()
         setShowPassword(false)
         navigate('/dashboard')
       } else {
-        // if register returned null or no message, show a generic error
         toast.error('Registration failed')
       }
-
-
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? err?.message ?? 'Registration failed'
       toast.error(msg)

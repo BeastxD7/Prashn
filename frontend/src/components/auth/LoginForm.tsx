@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { LoginSchema } from "@/zod/loginForm"
-import { Link } from "react-router-dom"
-
+import { Link, useNavigate } from "react-router-dom"
+import { api } from "@/api/api"
+import { toast } from "sonner"
 type FormData = z.infer<typeof LoginSchema>
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate()
 
   const form = useForm<FormData>({
     resolver: zodResolver(LoginSchema),
@@ -24,8 +26,25 @@ export function LoginForm() {
     },
   })
 
-  function onSubmit(data: FormData) {
-    console.log("Validated data:", data)
+  async function onSubmit(data: FormData) {
+    try {
+      const response = await api.user.login(data)
+      if (response?.status) {
+        toast.success(response.data.message)
+        form.reset()
+        setShowPassword(false)
+        navigate('/dashboard')
+      }else {
+        toast.error('Login failed')
+      }
+
+    } catch (error: any) {
+      console.log('errror izz: ', error);
+      
+      const msg = error?.response?.data?.message ?? error?.message ?? 'Login failed'
+      toast.error(msg)
+      console.error('Login error', error)
+    }
   }
 
   return (
