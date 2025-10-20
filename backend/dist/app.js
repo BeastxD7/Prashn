@@ -4,17 +4,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const user_route_1 = __importDefault(require("./routes/user.route"));
 const quiz_route_1 = __importDefault(require("./routes/quiz.route"));
 const agent_route_1 = __importDefault(require("./routes/agent.route"));
 const cors_1 = __importDefault(require("cors"));
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({
-    origin: 'http://localhost:5173', // Replace with your frontend URL
+    origin: 'https://localhost:5173', // Replace with your frontend URL
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
 }));
 app.use(express_1.default.json());
+// Parse cookies so `cookieAuth` middleware can read `req.cookies.access_token`
+app.use((0, cookie_parser_1.default)());
 app.get("/", (_req, res) => {
     res.json({ message: "Hello World!" });
 });

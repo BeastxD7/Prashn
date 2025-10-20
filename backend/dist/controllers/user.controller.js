@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteUserById = exports.updateUserById = exports.getUserById = exports.getAllUsers = exports.loginUser = exports.createUser = void 0;
+exports.getProfile = exports.deleteUserById = exports.updateUserById = exports.getUserById = exports.getAllUsers = exports.logoutUser = exports.loginUser = exports.createUser = void 0;
 const prisma_1 = __importDefault(require("../db/prisma"));
 const client_1 = require("@prisma/client");
 const user_1 = require("../zodSchemas/user");
@@ -53,6 +53,14 @@ const loginUser = async (req, res) => {
             return res.status(401).json({ status: false, message: "username or password is incorrect", error: 'Invalid password' });
         }
         const token = jsonwebtoken_1.default.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        // Set token as HttpOnly, Secure cookie
+        res.cookie('access_token', token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none', // Allow cross-site with HTTPS
+            maxAge: 60 * 60 * 1000,
+            path: '/'
+        });
         res.status(200).json({ status: true, message: 'Login successful', token });
     }
     catch (error) {
@@ -61,6 +69,11 @@ const loginUser = async (req, res) => {
     }
 };
 exports.loginUser = loginUser;
+const logoutUser = (_req, res) => {
+    res.cookie('access_token', '', { maxAge: 0, httpOnly: true, secure: true, sameSite: 'lax' });
+    res.json({ status: true, message: 'Logged out successfully' });
+};
+exports.logoutUser = logoutUser;
 // Get all users
 const getAllUsers = async (req, res) => {
     try {
@@ -114,3 +127,56 @@ const deleteUserById = async (req, res) => {
     }
 };
 exports.deleteUserById = deleteUserById;
+// export const getProfile = async (req: Request, res: Response) => {
+//   try {
+//     const userId = req.userId;
+//     console.log(userId);
+//     const user = await prisma.user.findUnique({
+//       where: { id: userId },
+//       select: {
+//         id: true,
+//         firstName: true,
+//         lastName: true,
+//         username: true,
+//         email: true,
+//         createdAt: true,
+//       },
+//     });
+//     console.log(user);
+//     if (!user) {
+//       console.log("user: ",user);
+//       console.log("userId: ",userId);
+//       return res.status(404).json({ status: false, message: 'User not found' });
+//     }
+//     res.status(200).json({ status: true, user });
+//   }
+//   catch (error) {
+//     console.log(error);
+//     res.status(500).json({ status: false, message: 'Failed to fetch profile' });
+//   }
+// };
+const getProfile = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const user = await prisma_1.default.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                username: true,
+                email: true,
+                createdAt: true,
+            },
+        });
+        if (!user) {
+            return res.status(404).json({ status: false, message: 'User not found' });
+        }
+        res.status(200).json({ status: true, user });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({ status: false, message: 'Failed to fetch profile' });
+    }
+};
+exports.getProfile = getProfile;

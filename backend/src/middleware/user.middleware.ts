@@ -7,7 +7,7 @@ dotenv.config();
 
 
 
-export const auth =  (req: Request, res: Response , next:NextFunction) => {
+export const headerAuth =  (req: Request, res: Response , next:NextFunction) => {
     try {
         console.log("Auth middleware called");
         
@@ -45,3 +45,20 @@ export const auth =  (req: Request, res: Response , next:NextFunction) => {
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 }
+
+export const cookieAuth = (req: Request, res: Response, next: NextFunction) => {
+  const token = req.cookies.access_token;
+  
+  if (!token) {
+    return res.status(401).json({ status: false, message: 'No token, authorization denied' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as CustomJwtPayload;
+    // Attach user info to request object for downstream use
+    req.userId = decoded.userId;
+    next();
+  } catch (err) {
+    res.status(401).json({ status: false, message: 'Token is not valid' });
+  }
+};
