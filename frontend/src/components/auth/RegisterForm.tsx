@@ -10,11 +10,15 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Link } from "react-router-dom"
 import { RegisterSchema } from "@/zod/RegisterForm"
+import { api } from '@/api/api'
+import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 
 type FormData = z.infer<typeof RegisterSchema>
 
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate()
 
   const form = useForm<FormData>({
     resolver: zodResolver(RegisterSchema),
@@ -27,8 +31,27 @@ export function RegisterForm() {
     },
   })
 
-  function onSubmit(data: FormData) {
-    console.log("Validated data:", data)
+  async function onSubmit(data: FormData) {
+    try {
+      const response = await api.user.register(data)
+      if (response?.status) {
+        console.log("ooyyyy");
+        
+        toast.success(response.data.message)
+        form.reset()
+        setShowPassword(false)
+        navigate('/dashboard')
+      } else {
+        // if register returned null or no message, show a generic error
+        toast.error('Registration failed')
+      }
+
+
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Registration failed'
+      toast.error(msg)
+      console.error('Registration error', err)
+    }
   }
 
   return (
@@ -112,7 +135,9 @@ export function RegisterForm() {
             )}
           />
 
-          <Button type="submit" className="w-full">Create Account</Button>
+          <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? 'Creating...' : 'Create Account'}
+          </Button>
 
           <div className="text-center text-sm text-muted-foreground">
             Already have an account? <Link to="/login" className="text-primary font-medium">Login</Link>

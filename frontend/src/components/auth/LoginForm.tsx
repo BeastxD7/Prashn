@@ -43,7 +43,7 @@ export function LoginForm() {
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor="username">Username</FieldLabel>
-                <Input {...field} id="username" placeholder="your.username" />
+                <Input {...field} id="username" placeholder="Enter your username" />
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}

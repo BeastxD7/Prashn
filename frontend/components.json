@@ -18,8 +18,5 @@
     "lib": "@/lib",
     "hooks": "@/hooks"
   },
-  "registries": {
-    "@aceternity": "https://ui.aceternity.com/registry/{name}.json",
-    "@acme": "https://acme.com/r/{shacn}.json"
-  }
+  "registries": {}
 }
