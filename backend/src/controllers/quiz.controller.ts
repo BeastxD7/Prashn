@@ -78,7 +78,7 @@ export const generateQuizByText = async (req: Request, res: Response) => {
     const requestedQuestions = preferences?.numOfQuestions || 5;
     const numOfQuestions = Math.min(requestedQuestions, maxQuestions + 1);
 
-    const requiredCredits = getRequiredCreditsForQuestions("generateQuizByText", numOfQuestions);
+  const requiredCredits = getRequiredCreditsForQuestions("generateQuizByText", numOfQuestions);
 
     const hasEnoughCredits = await checkAndDeductCredits(userId, requiredCredits);
 
@@ -342,7 +342,7 @@ export const generateQuizByPdf = [
         ? Math.min(normalizedNumOfQuestions, 30)
         : 5;
 
-      const requiredCredits = getRequiredCreditsForQuestions("generateQuizByPdf", sanitizedQuestions);
+  const requiredCredits = getRequiredCreditsForQuestions("generateQuizByPdf", sanitizedQuestions);
 
       const hasEnoughCredits = await checkAndDeductCredits(userId, requiredCredits);
 
@@ -450,7 +450,7 @@ export const generateQuizByYoutube = async (req: Request, res: Response) => {
       ? Math.min(requestedQuestions, 30)
       : 5;
 
-    const requiredCredits = getRequiredCreditsForQuestions("generateQuizByYoutube", sanitizedQuestions);
+  const requiredCredits = getRequiredCreditsForQuestions("generateQuizByYoutube", sanitizedQuestions);
 
     const hasEnoughCredits = await checkAndDeductCredits(userId, requiredCredits);
 
@@ -566,7 +566,7 @@ export const generateQuizByAudio = async (req: Request, res: Response) => {
         ? Math.min(requestedQuestions, 30)
         : 5;
 
-      const requiredCredits = getRequiredCreditsForQuestions("generateQuizByAudio", sanitizedQuestions);
+  const requiredCredits = getRequiredCreditsForQuestions("generateQuizByAudio", sanitizedQuestions);
 
       const hasEnoughCredits = await checkAndDeductCredits(userId, requiredCredits);
       if (!hasEnoughCredits) {

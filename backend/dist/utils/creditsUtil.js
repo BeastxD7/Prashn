@@ -26,7 +26,7 @@ const checkAndDeductCredits = async (userId, requiredCredits) => {
 exports.checkAndDeductCredits = checkAndDeductCredits;
 const getRequiredCreditsForQuestions = (generatorKey, questionCount) => {
     const rule = credits_1.creditRules[generatorKey];
-    if (!rule || !rule.tiers.length) {
+    if (!rule || !rule.tiers || !rule.tiers.length) {
         throw new Error(`No credit rules configured for ${generatorKey}`);
     }
     const normalizedCount = Number.isFinite(questionCount) && questionCount > 0 ? questionCount : 1;

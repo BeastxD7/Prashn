@@ -1,5 +1,5 @@
 import prisma from "../db/prisma";
-import { creditRules, CreditRuleKey } from "../constants/credits";
+import { featureName, creditRules } from "../constants/credits";
 
 export const checkAndDeductCredits = async (
     userId: string,
@@ -27,12 +27,12 @@ export const checkAndDeductCredits = async (
 };
 
 export const getRequiredCreditsForQuestions = (
-    generatorKey: CreditRuleKey,
+    generatorKey: featureName,
     questionCount: number
 ): number => {
     const rule = creditRules[generatorKey];
 
-    if (!rule || !rule.tiers.length) {
+    if (!rule || !rule.tiers || !rule.tiers.length) {
         throw new Error(`No credit rules configured for ${generatorKey}`);
     }
 

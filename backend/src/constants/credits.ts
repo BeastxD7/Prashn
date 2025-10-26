@@ -10,39 +10,85 @@ export interface CreditRule {
     tiers: CreditTier[];
 }
 
-export type CreditRuleKey =
+// New feature shape: each feature holds a friendly title and description plus the credit rule
+export interface Feature {
+    /** machine-friendly id for the feature */
+    id: string;
+    title: string;
+    description: string;
+    rule: CreditRule;
+    image:string;
+    route:string;
+}
+
+export type featureName =
     | "generateQuizByText"
     | "generateQuizByPdf"
     | "generateQuizByYoutube"
     | "generateQuizByAudio";
 
-export const creditRules: Record<CreditRuleKey, CreditRule> = {
-    generateQuizByText: {
-        tiers: [
-            { maxQuestions: 5, credits: 1 },
-            { maxQuestions: 15, credits: 2 },
-            { maxQuestions: 30, credits: 3 }
-        ],
+
+export const features: Feature[] = [
+    {
+        id: 'generateQuizByText',
+        title: "Generate Quiz from Text",
+        description: "Create a quiz based on pasted or submitted text input.",
+        route: "/generateQuizByText",
+        image: "https://4kwallpapers.com/images/walls/thumbs_3t/7658.jpg",
+        rule: {
+            tiers: [
+                { maxQuestions: 5, credits: 1 },
+                { maxQuestions: 15, credits: 2 },
+                { maxQuestions: 30, credits: 3 },
+            ],
+        },
     },
-    generateQuizByPdf: {
-        tiers: [
-            { maxQuestions: 5, credits: 2 },
-            { maxQuestions: 15, credits: 3 },
-            { maxQuestions: 30, credits: 4 },
-        ],
+    {
+        id: 'generateQuizByPdf',
+        title: "Generate Quiz from PDF",
+        description: "Extract content from a PDF and generate quiz questions.",
+        route: "/generateQuizByPdf",
+        image: "https://4kwallpapers.com/images/walls/thumbs_3t/7658.jpg",
+        rule: {
+            tiers: [
+                { maxQuestions: 5, credits: 2 },
+                { maxQuestions: 15, credits: 3 },
+                { maxQuestions: 30, credits: 4 },
+            ],
+        },
     },
-    generateQuizByYoutube: {
-        tiers: [
-            { maxQuestions: 5, credits: 2 },
-            { maxQuestions: 15, credits: 3 },
-            { maxQuestions: 30, credits: 4 },
-        ],
+    {
+        id: 'generateQuizByYoutube',
+        title: "Generate Quiz from YouTube",
+        description: "Generate quiz questions using a YouTube video's transcript.",
+        route: "/generateQuizByYoutube",
+        image: "https://4kwallpapers.com/images/walls/thumbs_3t/7658.jpg",
+        rule: {
+            tiers: [
+                { maxQuestions: 5, credits: 2 },
+                { maxQuestions: 15, credits: 3 },
+                { maxQuestions: 30, credits: 4 },
+            ],
+        },
     },
-    generateQuizByAudio: {
-        tiers: [
-            { maxQuestions: 5, credits: 2 },
-            { maxQuestions: 15, credits: 3 },
-            { maxQuestions: 30, credits: 4 },
-        ],
+    {
+        id: 'generateQuizByAudio',
+        title: "Generate Quiz from Audio",
+        description: "Transcribe audio and create quiz questions from the transcript.",
+        route: "/generateQuizByAudio",
+        image: "https://4kwallpapers.com/images/walls/thumbs_3t/7658.jpg",
+        rule: {
+            tiers: [
+                { maxQuestions: 5, credits: 2 },
+                { maxQuestions: 15, credits: 3 },
+                { maxQuestions: 30, credits: 4 },
+            ],
+        },
     },
-};
+];
+
+// Compatibility helper: expose a 'creditRules' view that returns the old shape (Record<featureName, CreditRule>)
+export const creditRules: Record<featureName, CreditRule> = features.reduce(
+    (acc, f) => ({ ...acc, [f.id]: f.rule }),
+    {} as Record<string, CreditRule>
+) as Record<featureName, CreditRule>;

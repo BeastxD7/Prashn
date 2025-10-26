@@ -47,15 +47,23 @@ export const headerAuth =  (req: Request, res: Response , next:NextFunction) => 
 }
 
 export const cookieAuth = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.cookies.access_token;
-  
+  // First try cookie (typical for browser-based sessions)
+  let token = req.cookies?.access_token;
+
+  // Fallback: accept Authorization header too so local http frontends can send Bearer tokens
+  if (!token) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+  }
+
   if (!token) {
     return res.status(401).json({ status: false, message: 'No token, authorization denied' });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as CustomJwtPayload;
-    // Attach user info to request object for downstream use
     req.userId = decoded.userId;
     next();
   } catch (err) {

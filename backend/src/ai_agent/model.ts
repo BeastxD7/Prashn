@@ -20,3 +20,4 @@ export const callLLM = async (text: string): Promise<string> => {
     const content = r?.steps?.[0]?.response?.body?.choices?.[0]?.message?.content;
     return typeof content === 'string' ? content : String(content ?? '');
 }
+

@@ -53,13 +53,15 @@ const loginUser = async (req, res) => {
             return res.status(401).json({ status: false, message: "username or password is incorrect", error: 'Invalid password' });
         }
         const token = jsonwebtoken_1.default.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        // Set token as HttpOnly, Secure cookie
+        const isProd = process.env.NODE_ENV === 'production';
+        // Set token as HttpOnly cookie. In production we use secure + sameSite none (for cross-site https).
+        // For local development (http) we must avoid secure:true so the browser will accept the cookie.
         res.cookie('access_token', token, {
             httpOnly: true,
-            secure: true,
-            sameSite: 'none', // Allow cross-site with HTTPS
+            secure: isProd,
+            sameSite: isProd ? 'none' : 'lax',
             maxAge: 60 * 60 * 1000,
-            path: '/'
+            path: '/',
         });
         res.status(200).json({ status: true, message: 'Login successful', token });
     }
@@ -70,7 +72,8 @@ const loginUser = async (req, res) => {
 };
 exports.loginUser = loginUser;
 const logoutUser = (_req, res) => {
-    res.cookie('access_token', '', { maxAge: 0, httpOnly: true, secure: true, sameSite: 'lax' });
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookie('access_token', '', { maxAge: 0, httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax' });
     res.json({ status: true, message: 'Logged out successfully' });
 };
 exports.logoutUser = logoutUser;
