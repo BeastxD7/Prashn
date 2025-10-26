@@ -1,123 +1,116 @@
 "use client"
-// dashboard UI only — components replaced with inline UI
 
-export default function DashboardPage() {
-  return (
-    <section className="py-20">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Welcome back — create quizzes quickly using AI</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button className="rounded-md border px-3 py-2">Settings</button>
-            <button className="rounded-md bg-primary text-white px-4 py-2">New Quiz</button>
-          </div>
-        </div>
+import { useState, useEffect } from "react"
+import { Zap, Plus, BookOpen } from "lucide-react"
+import { FeatureCard } from "@/components/FeatureCard"
+import { api } from "@/api/api"
 
-        {/* Top widgets */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
-              <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-lg bg-gradient-to-tr from-primary/20 to-transparent flex items-center justify-center text-2xl">🧠</div>
-                <div>
-                  <div className="text-lg font-semibold">AI Quiz Generator</div>
-                  <div className="text-sm text-muted-foreground">Generate quizzes from text, PDF, audio, video or YouTube</div>
-                </div>
-              </div>
-
-              <div className="mt-4 flex gap-3">
-                <button className="px-3 py-2 rounded-md bg-primary text-white">Create from Text</button>
-                <button className="px-3 py-2 rounded-md border">Create from PDF</button>
-                <button className="px-3 py-2 rounded-md border">Create from YouTube</button>
-              </div>
-            </div>
-
-            <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-muted-foreground">Credits</div>
-                  <div className="text-2xl font-bold mt-1">42</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-muted-foreground">Usage</div>
-                  <div className="text-sm">12 generated quizzes this month</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
-            <div className="text-sm text-muted-foreground">Recent activity</div>
-            <ul className="mt-4 space-y-3">
-              <li className="flex items-center justify-between">
-                <div className="text-sm">Generated quiz from article</div>
-                <div className="text-xs text-muted-foreground">2h ago</div>
-              </li>
-              <li className="flex items-center justify-between">
-                <div className="text-sm">Saved quiz: React Basics</div>
-                <div className="text-xs text-muted-foreground">1d ago</div>
-              </li>
-              <li className="flex items-center justify-between">
-                <div className="text-sm">Edited quiz: World History</div>
-                <div className="text-xs text-muted-foreground">3d ago</div>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Feature cards grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          <FeatureCard title="Generate from Text" subtitle="Paste or type text" emoji="📄" />
-          <FeatureCard title="Generate from PDF" subtitle="Upload a PDF" emoji="📑" />
-          <FeatureCard title="Generate from Audio" subtitle="Upload audio file" emoji="🎧" />
-          <FeatureCard title="Generate from Video" subtitle="Upload a video" emoji="🎬" />
-          <FeatureCard title="Generate from YouTube" subtitle="Provide a URL" emoji="▶️" />
-        </div>
-
-        {/* Bottom area: informational cards */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
-            <h4 className="font-semibold mb-2">My Quizzes</h4>
-            <p className="text-sm text-muted-foreground">Quick access to quizzes you've created or saved.</p>
-          </div>
-
-          <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
-            <h4 className="font-semibold mb-2">Team Activity</h4>
-            <p className="text-sm text-muted-foreground">See how your team uses credits and generated quizzes.</p>
-          </div>
-
-          <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
-            <h4 className="font-semibold mb-2">Billing</h4>
-            <p className="text-sm text-muted-foreground">Manage credits and subscription.</p>
-            <div className="mt-4">
-              <button className="px-4 py-2 rounded-md bg-primary text-white">Top up credits</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
+interface DashboardData {
+  credits: number
+  features: Array<{
+    id: string
+    title: string
+    description: string
+    image: string
+    tiers: Array<{ maxQuestions: number; credits: number }>
+    route: string
+  }>
 }
 
-function FeatureCard({ title, subtitle, emoji }: { title: string; subtitle: string; emoji: string }) {
-  return (
-    <div className={`bg-card rounded-2xl border border-border p-5 flex flex-col justify-between shadow-sm`}>
-      <div className="flex items-start gap-3">
-        <div className="text-3xl">{emoji}</div>
-        <div>
-          <div className="font-semibold">{title}</div>
-          <div className="text-sm text-muted-foreground">{subtitle}</div>
-        </div>
-      </div>
+const Dashboard = () => {
+  const user = { username: "JohnDoe" }
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
 
-      <div className="mt-4 flex items-center justify-between">
-        <button className="px-3 py-2 rounded-md border">Open</button>
-        <div className="text-xs text-muted-foreground">Free • 1 credit</div>
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await api.dashboard.getData()
+        if (response?.data?.data) {
+          setDashboardData(response.data.data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  return (
+    <div className="pt-20 min-h-screen bg-gradient-to-br from-background to-background/95 w-full pb-12 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className="mb-8 sm:mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
+            {/* Welcome Section - Takes 2 columns on large screens */}
+            <div className="lg:col-span-2">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground dark:text-white mb-2">
+                Welcome back,{" "}
+                <span className="bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
+                  {user?.username || "User"}
+                </span>
+              </h1>
+              <p className="text-sm sm:text-base text-muted-foreground dark:text-slate-400">
+                Create amazing quizzes with AI-powered generation
+              </p>
+            </div>
+
+            {/* Credits Card - Takes 1 column on large screens */}
+            <div className="bg-gradient-to-br from-blue-600 to-cyan-600 dark:from-blue-500 dark:to-cyan-500 rounded-2xl p-4 sm:p-6 text-white shadow-lg hover:shadow-xl transition-shadow w-full lg:w-auto">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="text-xs sm:text-sm font-medium opacity-90">Available Credits</span>
+              </div>
+              <div className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">{dashboardData?.credits || 0}</div>
+              <button className="w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base">
+                <Plus className="w-4 h-4 flex-shrink-0" />
+                Add Credits
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Features Section */}
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground dark:text-white mb-4 sm:mb-6">
+            Quiz Generation Features
+          </h2>
+
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="w-full h-60 sm:h-64 md:h-72 bg-card dark:bg-slate-800 rounded-2xl animate-pulse"
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+              {dashboardData?.features.map((feature) => (
+                <FeatureCard key={feature.id} feature={feature} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Empty State */}
+        {!loading && (!dashboardData?.features || dashboardData.features.length === 0) && (
+          <div className="text-center py-8 sm:py-12">
+            <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground dark:text-slate-500 mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg sm:text-xl font-semibold text-foreground dark:text-white mb-2">
+              No features available
+            </h3>
+            <p className="text-sm sm:text-base text-muted-foreground dark:text-slate-400">
+              Check back soon for new quiz generation features
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )
 }
+
+export default Dashboard

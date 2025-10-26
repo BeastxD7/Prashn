@@ -13,11 +13,25 @@ import {
 import { useState } from "react";
 import { ModeToggle } from "../mode-toggle";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from '@/context/AuthContext'
+import { toast } from 'sonner'
 export function NavbarDemo() {
 
 
     const navigate = useNavigate();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const { user, logout } = useAuth()
+
+    const handleLogout = async () => {
+      try {
+        await logout()
+        toast.success('Logged out')
+        navigate('/')
+      } catch (err) {
+        console.error('Logout failed', err)
+        toast.error('Logout failed')
+      }
+    }
 
   return (
     <div className="fixed w-full">
@@ -27,7 +41,11 @@ export function NavbarDemo() {
           <NavbarLogo />
           <NavItems items={navItems} />
           <div className="flex items-center gap-4 z-50">
-            <NavbarButton onClick={() => navigate("/login")} variant="secondary">Login</NavbarButton>
+            {!user ? (
+              <NavbarButton onClick={() => navigate('/login')} variant="secondary">Login</NavbarButton>
+            ) : (
+              <NavbarButton onClick={handleLogout} variant="secondary">Logout</NavbarButton>
+            )}
             <ModeToggle />
           </div>
         </NavBody>
@@ -57,13 +75,23 @@ export function NavbarDemo() {
               </a>
             ))}
             <div className="flex w-full flex-col gap-4">
-              <NavbarButton
-                onClick={() => setIsMobileMenuOpen(false)}
-                variant="primary"
-                className="w-full"
-              >
-                Login
-              </NavbarButton>
+              {!user ? (
+                <NavbarButton
+                  onClick={() => { setIsMobileMenuOpen(false); navigate('/login') }}
+                  variant="primary"
+                  className="w-full"
+                >
+                  Login
+                </NavbarButton>
+              ) : (
+                <NavbarButton
+                  onClick={() => { setIsMobileMenuOpen(false); handleLogout() }}
+                  variant="primary"
+                  className="w-full"
+                >
+                  Logout
+                </NavbarButton>
+              )}
               <ModeToggle />
             </div>
           </MobileNavMenu>

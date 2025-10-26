@@ -38,7 +38,7 @@ export function RegisterForm() {
         toast.success(response.data.message)
         form.reset()
         setShowPassword(false)
-        navigate('/dashboard')
+        navigate('/')
       } else {
         toast.error('Registration failed')
       }

@@ -11,12 +11,14 @@ import { Card } from "@/components/ui/card"
 import { LoginSchema } from "@/zod/loginForm"
 import { Link, useNavigate } from "react-router-dom"
 import { api } from "@/api/api"
+import { useAuth } from '@/context/AuthContext'
 import { toast } from "sonner"
 type FormData = z.infer<typeof LoginSchema>
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
+  const { setUser } = useAuth()
 
   const form = useForm<FormData>({
     resolver: zodResolver(LoginSchema),
@@ -26,21 +28,45 @@ export function LoginForm() {
     },
   })
 
-  async function onSubmit(data: FormData) {
+async function onSubmit(data: FormData) {
     try {
       const response = await api.user.login(data)
-      if (response?.status) {
-        toast.success(response.data.message)
+
+      const msg = response?.data?.message ?? response?.data?.data?.message ?? 'Login failed'
+
+      // Consider obvious success when backend responds with status=true or success=true
+      const ok = response?.data?.status === true || response?.data?.success === true || response?.status === 200
+
+      if (ok) {
+        toast.success(msg)
+        // reset form and hide password input
         form.reset()
         setShowPassword(false)
+
+        // Try to set user from login response if present, otherwise fetch profile
+        try {
+          const userFromResponse = response?.data?.user ?? response?.data?.data?.user ?? null
+          if (userFromResponse) {
+            // set the user in auth context so ProtectedRoute sees authenticated user
+            setUser(userFromResponse as any)
+          } else {
+            // fallback: fetch the authenticated profile using the api helper
+            const profileRes = await api.user.me()
+            if (profileRes?.data?.status) {
+              setUser(profileRes.data.user as any)
+            }
+          }
+        } catch (e) {
+          // if fetching profile fails, still let navigation happen; ProtectedRoute or App may re-check
+          console.error('Failed to set user after login:', e)
+        }
+
         navigate('/dashboard')
-      }else {
-        toast.error('Login failed')
+      } else {
+        toast.error(msg)
       }
 
     } catch (error: any) {
-      console.log('errror izz: ', error);
-      
       const msg = error?.response?.data?.message ?? error?.message ?? 'Login failed'
       toast.error(msg)
       console.error('Login error', error)

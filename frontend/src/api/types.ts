@@ -4,6 +4,10 @@ export interface ApiResponse<T> {
 	data: T | null;
 }
 
+
+// ------------------ User related types --------------------------
+
+
 export interface UserRegisterPayload {
 	firstName: string;
 	lastName: string;
@@ -13,9 +17,9 @@ export interface UserRegisterPayload {
 }
 
 export interface UserResponse {
-	status:boolean;
-	message:string;
-	user:string;
+	status: boolean;
+	message: string;
+	user?: unknown;
 }
 
 export interface UserLoginPayload {
@@ -29,98 +33,31 @@ export interface ResetPasswordPayload {
 	confirmPassword: string;
 }
 
-
-export interface DashboardResponse {
-	metrics: Record<string, number>;
-	highlights?: Record<string, unknown>;
-	[key: string]: unknown;
+export interface meResponse {
+	status: boolean;
+	message?: string;
+	user: any;
 }
 
-export interface EventItem {
+
+// ------------------ Dashboard / Features --------------------------
+
+
+export interface FeatureTier {
+	maxQuestions: number;
+	credits: number;
+}
+
+export interface FeatureItem {
 	id: string;
 	title: string;
 	description?: string;
-	createdAt: string;
-	[key: string]: unknown;
+	route: string;
+	tiers: FeatureTier[];
 }
 
-export interface EventResponse {
-	events: EventItem[];
-	total: number;
+export interface DashboardData {
+	credits: number;
+	features: FeatureItem[];
 }
 
-export interface LinkedInCredentialsPayload {
-	username: string;
-	password: string;
-	otp?: string;
-	proxyId?: string;
-}
-
-export interface LinkedInCredentialsResponse {
-	id: string;
-	username: string;
-	createdAt: string;
-	[key: string]: unknown;
-}
-
-export interface CampaignFilter extends Record<string, unknown> {
-	search?: string;
-	status?: string;
-	ownerId?: string;
-	limit?: number;
-	page?: number;
-	leadId?: string;
-	campaignId?: string;
-}
-
-export interface CampaignSummary {
-	id: string;
-	name: string;
-	status: string;
-	createdAt: string;
-	[key: string]: unknown;
-}
-
-export interface GetCampaignListResponse {
-	items: CampaignSummary[];
-	total: number;
-}
-
-export interface CampaignStep {
-	id: string;
-	name: string;
-	order: number;
-	[key: string]: unknown;
-}
-
-export interface GetCampaignDetails {
-	id: string;
-	name: string;
-	status: string;
-	steps: CampaignStep[];
-	[key: string]: unknown;
-}
-
-export interface WorkflowNodeData {
-	label?: string;
-	type?: string;
-	[key: string]: unknown;
-}
-
-export interface WorkflowNode<T = WorkflowNodeData> {
-	id: string;
-	data: T;
-	position: {
-		x: number;
-		y: number;
-	};
-	[key: string]: unknown;
-}
-
-export interface WorkflowEdge {
-	id: string;
-	source: string;
-	target: string;
-	label?: string;
-	[key: string]: unknown;
-}
