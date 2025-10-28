@@ -11,7 +11,7 @@ const app = express()
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173' || 'https://localhost:5173';
 app.use(
     cors({
-        origin: [FRONTEND_URL, "https://prashn.swastify.life"],
+        origin: FRONTEND_URL,
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
         credentials: true,
     })
@@ -29,6 +29,6 @@ app.use("/api/quiz", QuizRouter)
 app.use("/api/agent", AgentRouter);
 app.use("/api/dashboard", DashboardRouter);
 
-app.listen(3002, () => {
+app.listen(3000, () => {
     console.log("Server is running on port 3000")
 })
