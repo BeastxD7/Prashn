@@ -32,12 +32,12 @@ export function FeatureCard({ feature }: FeatureCardProps) {
   return (
     <TooltipProvider>
       <div
-        className="
-          group relative w-48 sm:w-52 md:w-56
+        className={
+          `group relative w-full
           h-60 sm:h-64 md:h-72
           rounded-2xl overflow-hidden bg-slate-900/20 shadow-md backdrop-blur-md
-          transition-all duration-300 hover:shadow-xl hover:-translate-y-1
-        "
+          transition-all duration-300 hover:shadow-xl hover:-translate-y-1`
+        }
       >
         {/* Full Background Image */}
         <img

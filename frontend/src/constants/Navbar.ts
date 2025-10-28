@@ -1,12 +1,12 @@
 
 export const navItems = [
     {
-        name: "Features",
-        link: "#features",
+        name: "Generate Quiz",
+        link: "/generateQuizByText",
     },
     {
-        name: "Pricing",
-        link: "#pricing",
+        name: "Dashboard",
+        link: "/dashboard",
     },
     {
         name: "Contact",

@@ -3,6 +3,8 @@ import apiClient from './apiClient';
 import type {
   ApiResponse,
   DashboardData,
+  GenerateQuizByTextPayload,
+  GenerateQuizByTextResponse,
   meResponse,
   UserLoginPayload,
   UserRegisterPayload,
@@ -27,12 +29,41 @@ export const api = {
     me: async (): Promise<AxiosResponse | null> => {
       const res = await apiClient.get<ApiResponse<meResponse>>('users/me');
       return res;
+    },
+    getCredits: async (): Promise<AxiosResponse | null> => {
+      const res = await apiClient.get<ApiResponse<{ credits: number }>>('users/credits');
+      return res;
     }
   },
   dashboard: {
     getData: async (): Promise<AxiosResponse | null> => {
       const res = await apiClient.get<ApiResponse<DashboardData>>(`dashboard`);
       return res;
+    },
+  },
+  quiz: {
+    generateByText: async (
+      payload: GenerateQuizByTextPayload
+    ): Promise<AxiosResponse<GenerateQuizByTextResponse> | null> => {
+      const res = await apiClient.post<GenerateQuizByTextResponse>(
+        'quiz/generate-quiz-by-text',
+        payload
+      );
+      return res;
+    },
+    getById: async (id: number): Promise<AxiosResponse<any> | null> => {
+      // returns the quiz with questions: { status, quiz, questions, noOfQuestions, creditsCharged }
+      const res = await apiClient.get<any>(`get-quiz-by-id/${id}`)
+      return res
+    },
+    // New: fetch quiz by id using query param: get-quiz-by-id?quizId={id}
+    getQuizById: async (id: number): Promise<AxiosResponse<any> | null> => {
+      const res = await apiClient.get<any>(`quiz/get-quiz-by-id?quizId=${id}`)
+      return res
+    },
+    editQuestions: async (payload: { questions: any[] }): Promise<AxiosResponse<any> | null> => {
+      const res = await apiClient.post<any>('quiz/edit-quiz-questions', payload)
+      return res
     },
   },
 };

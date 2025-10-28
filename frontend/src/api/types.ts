@@ -61,3 +61,54 @@ export interface DashboardData {
 	features: FeatureItem[];
 }
 
+export const DIFFICULTY_VALUES = ["easy", "medium", "hard"] as const;
+
+export type DifficultyLevel = (typeof DIFFICULTY_VALUES)[number];
+
+export const QUESTION_TYPE_VALUES = [
+	"MCQ",
+	"SHORT_ANSWER",
+	"TRUE_FALSE",
+	"FILL_IN_THE_BLANK",
+	"MATCHING",
+	"ESSAY",
+	"ORDERING",
+] as const;
+
+export type QuestionType = (typeof QUESTION_TYPE_VALUES)[number];
+
+export interface GenerateQuizPreferences {
+	numOfQuestions?: number;
+	difficulty?: DifficultyLevel;
+	questionTypes?: QuestionType[];
+}
+
+export interface GenerateQuizByTextPayload {
+	title: string;
+	description: string;
+	content: string;
+	preferences?: GenerateQuizPreferences;
+}
+
+export interface QuizQuestion {
+	type: QuestionType;
+	content: string;
+	options?: string[];
+	answer: string;
+	explanation?: string;
+	difficulty: DifficultyLevel | string;
+}
+
+export interface GenerateQuizByTextResponse {
+	quiz: {
+		title: string;
+		description: string;
+		userId?: string;
+	};
+	noOfQuestions: number;
+	questions: {
+		questions: QuizQuestion[];
+	};
+	creditsCharged?: number;
+}
+

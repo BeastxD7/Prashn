@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Zap, Plus, BookOpen } from "lucide-react"
 import { FeatureCard } from "@/components/FeatureCard"
 import { api } from "@/api/api"
+import { useAuth } from "@/context/AuthContext"
 
 interface DashboardData {
   credits: number
@@ -18,7 +19,7 @@ interface DashboardData {
 }
 
 const Dashboard = () => {
-  const user = { username: "JohnDoe" }
+  const user = useAuth()
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -49,7 +50,7 @@ const Dashboard = () => {
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground dark:text-white mb-2">
                 Welcome back,{" "}
                 <span className="bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
-                  {user?.username || "User"}
+                  {user?.user?.firstName || "User"}
                 </span>
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground dark:text-slate-400">
