@@ -11,6 +11,7 @@ const agent_route_1 = __importDefault(require("./routes/agent.route"));
 const cors_1 = __importDefault(require("cors"));
 const dashboard_route_1 = __importDefault(require("./routes/dashboard.route"));
 const app = (0, express_1.default)();
+const PORT = process.env.PORT || 3002;
 // Allow the local frontend during development. Use an env var in production for security.
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173' || 'https://localhost:5173';
 app.use((0, cors_1.default)({
@@ -28,6 +29,6 @@ app.use("/api/users", user_route_1.default);
 app.use("/api/quiz", quiz_route_1.default);
 app.use("/api/agent", agent_route_1.default);
 app.use("/api/dashboard", dashboard_route_1.default);
-app.listen(3000, () => {
-    console.log("Server is running on port 3000");
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });

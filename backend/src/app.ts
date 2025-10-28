@@ -7,6 +7,8 @@ import cors from 'cors';
 import DashboardRouter from './routes/dashboard.route'
 
 const app = express()
+
+const PORT = process.env.PORT || 3002;
 // Allow the local frontend during development. Use an env var in production for security.
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173' || 'https://localhost:5173';
 app.use(
@@ -29,6 +31,6 @@ app.use("/api/quiz", QuizRouter)
 app.use("/api/agent", AgentRouter);
 app.use("/api/dashboard", DashboardRouter);
 
-app.listen(3000, () => {
-    console.log("Server is running on port 3000")
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`)
 })
