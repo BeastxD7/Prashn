@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateQuizByAudio = exports.generateQuizByYoutube = exports.generateQuizByPdf = exports.editQuizQuestionsOnly = exports.saveQuiz = exports.generateQuizByText = void 0;
+exports.getQuizById = exports.generateQuizByAudio = exports.generateQuizByYoutube = exports.generateQuizByPdf = exports.editQuizQuestionsOnly = exports.saveQuiz = exports.generateQuizByText = void 0;
 const prisma_1 = __importDefault(require("../db/prisma"));
 const quizllm_1 = require("../aiModels/quizllm");
 const fix_json_1 = require("../utils/fix_json");
@@ -59,7 +59,7 @@ const generateQuizByText = async (req, res) => {
         }
         const { data, error } = quiz_1.generateQuizByTextSchema.safeParse(req.body);
         if (error) {
-            return res.status(400).json({ error: error.issues });
+            return res.status(400).json({ message: error.issues });
         }
         const { title, description, content, preferences } = data;
         // Validate required fields
@@ -71,7 +71,7 @@ const generateQuizByText = async (req, res) => {
         if (content.length > 7000) {
             return res
                 .status(400)
-                .json({ error: "Content exceeds maximum length of 7,000 characters." });
+                .json({ message: "Content exceeds maximum length of 7,000 characters." });
         }
         // Enforce sensible question count limits
         const maxQuestions = 30;
@@ -80,7 +80,7 @@ const generateQuizByText = async (req, res) => {
         const requiredCredits = (0, creditsUtil_1.getRequiredCreditsForQuestions)("generateQuizByText", numOfQuestions);
         const hasEnoughCredits = await (0, creditsUtil_1.checkAndDeductCredits)(userId, requiredCredits);
         if (!hasEnoughCredits) {
-            return res.status(402).json({ error: "Insufficient credits to generate quiz.", requiredCredits });
+            return res.status(402).json({ message: "Insufficient credits to generate quiz.", requiredCredits });
         }
         if (content.length < numOfQuestions * 100) {
             // Heuristic: Require at least ~100 chars per question
@@ -94,7 +94,7 @@ const generateQuizByText = async (req, res) => {
 
     Generate exactly ${numOfQuestions} quiz questions based ONLY on the following content.
     Do NOT generate fewer or more than ${numOfQuestions}.
-  Return ONLY a valid JSON array with exactly ${numOfQuestions} question objects, each with fields:
+    Return ONLY a valid JSON array with exactly ${numOfQuestions} question objects, each with fields:
     type, content, options (if applicable), answer, explanation (optional), difficulty.
     Use ONLY the following content to create the questions:
 
@@ -131,18 +131,51 @@ const generateQuizByText = async (req, res) => {
                 .json({ error: "Invalid JSON output from LLM and fix failed." });
         }
         let questions = JSON.parse(fixedJson);
+        // Normalize parsed structure into an array of question objects
+        const questionsArray = Array.isArray(questions)
+            ? questions
+            : Array.isArray(questions === null || questions === void 0 ? void 0 : questions.questions)
+                ? questions.questions
+                : [];
         // Enforce exact number of questions (truncate if too many)
-        if (questions.length > numOfQuestions) {
-            questions = questions.slice(0, numOfQuestions);
+        if (questionsArray.length > numOfQuestions) {
+            questionsArray.splice(numOfQuestions);
         }
         // Pad with repeated last question if fewer than needed (optional)
-        while (questions.length < numOfQuestions) {
-            questions.push(questions[questions.length - 1]);
+        while (questionsArray.length < numOfQuestions) {
+            questionsArray.push(questionsArray[questionsArray.length - 1]);
         }
-        res.status(200).json({
-            quiz: { title, description, userId },
-            noOfQuestions: questions.questions.length,
-            questions,
+        // Validate questions before saving
+        if (questionsArray.some((q) => !validateQuestion(q))) {
+            return res.status(422).json({ error: 'Generated questions have invalid format.' });
+        }
+        // Save quiz and questions atomically in the database
+        const result = await prisma_1.default.$transaction(async (tx) => {
+            const createdQuiz = await tx.quiz.create({
+                data: {
+                    title,
+                    description,
+                    userId: req.userId,
+                },
+            });
+            const savedQuestions = await Promise.all(questionsArray.map((q) => tx.question.create({
+                data: {
+                    quizId: createdQuiz.id,
+                    type: q.type,
+                    content: q.content,
+                    options: q.options || null,
+                    answer: JSON.stringify(q.answer),
+                    explanation: q.explanation || null,
+                    difficulty: q.difficulty || 'MEDIUM',
+                },
+            })));
+            return { quiz: createdQuiz, questions: savedQuestions };
+        });
+        res.status(201).json({
+            status: true,
+            quiz: result.quiz,
+            questions: result.questions,
+            noOfQuestions: result.questions.length,
             creditsCharged: requiredCredits,
         });
     }
@@ -547,3 +580,28 @@ const generateQuizByAudio = async (req, res) => {
     }
 };
 exports.generateQuizByAudio = generateQuizByAudio;
+const getQuizById = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { quizId } = req.query;
+        const idNum = Number(quizId);
+        if (!Number.isFinite(idNum)) {
+            return res.status(400).json({ message: 'Invalid quizId parameter.' });
+        }
+        const quiz = await prisma_1.default.quiz.findUnique({
+            where: { id: idNum },
+            include: { questions: true },
+        });
+        if (!quiz) {
+            return res.status(404).json({ status: false, message: 'Quiz not found.' });
+        }
+        // Indicate whether the requesting user owns this quiz
+        const isOwner = quiz.userId === userId;
+        res.status(200).json({ status: true, isOwner, quiz });
+    }
+    catch (error) {
+        console.error('Error fetching quiz by ID:', error);
+        res.status(500).json({ message: 'Failed to fetch quiz.' });
+    }
+};
+exports.getQuizById = getQuizById;

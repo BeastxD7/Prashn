@@ -60,7 +60,7 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(401).json({ status: false, message: "username or password is incorrect", error: 'Invalid password' });
     }
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '24h' });
 
     const isProd = process.env.NODE_ENV === 'production';
 
@@ -193,5 +193,22 @@ export const getProfile = async (req: Request, res: Response) => {
   catch (error) {
     console.log(error);
     res.status(500).json({ status: false, message: 'Failed to fetch profile' });
+  }
+};
+
+export const getUserCredits = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { credits: true },
+    });
+    if (!user) {
+      return res.status(404).json({ status: false, message: 'User not found' });
+    }
+    res.status(200).json({ status: true, credits: user.credits });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ status: false, message: 'Failed to fetch user credits' });
   }
 };

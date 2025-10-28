@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getProfile = exports.deleteUserById = exports.updateUserById = exports.getUserById = exports.getAllUsers = exports.logoutUser = exports.loginUser = exports.createUser = void 0;
+exports.getUserCredits = exports.getProfile = exports.deleteUserById = exports.updateUserById = exports.getUserById = exports.getAllUsers = exports.logoutUser = exports.loginUser = exports.createUser = void 0;
 const prisma_1 = __importDefault(require("../db/prisma"));
 const client_1 = require("@prisma/client");
 const user_1 = require("../zodSchemas/user");
@@ -52,7 +52,7 @@ const loginUser = async (req, res) => {
         if (!isPasswordValid) {
             return res.status(401).json({ status: false, message: "username or password is incorrect", error: 'Invalid password' });
         }
-        const token = jsonwebtoken_1.default.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jsonwebtoken_1.default.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '24h' });
         const isProd = process.env.NODE_ENV === 'production';
         // Set token as HttpOnly cookie. In production we use secure + sameSite none (for cross-site https).
         // For local development (http) we must avoid secure:true so the browser will accept the cookie.
@@ -183,3 +183,21 @@ const getProfile = async (req, res) => {
     }
 };
 exports.getProfile = getProfile;
+const getUserCredits = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const user = await prisma_1.default.user.findUnique({
+            where: { id: userId },
+            select: { credits: true },
+        });
+        if (!user) {
+            return res.status(404).json({ status: false, message: 'User not found' });
+        }
+        res.status(200).json({ status: true, credits: user.credits });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({ status: false, message: 'Failed to fetch user credits' });
+    }
+};
+exports.getUserCredits = getUserCredits;

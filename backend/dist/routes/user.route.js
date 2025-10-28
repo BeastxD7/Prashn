@@ -8,6 +8,7 @@ UserRouter.post('/register', user_controller_1.createUser);
 UserRouter.post('/login', user_controller_1.loginUser);
 UserRouter.get('/', user_controller_1.getAllUsers);
 UserRouter.get('/me', user_middleware_1.cookieAuth, user_controller_1.getProfile);
+UserRouter.get('/credits', user_middleware_1.cookieAuth, user_controller_1.getUserCredits);
 UserRouter.get('/:id', user_controller_1.getUserById);
 UserRouter.put('/:id', user_controller_1.updateUserById);
 UserRouter.delete('/:id', user_controller_1.deleteUserById);
