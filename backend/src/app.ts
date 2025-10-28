@@ -11,7 +11,7 @@ const app = express()
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173' || 'https://localhost:5173';
 app.use(
     cors({
-        origin: [FRONTEND_URL, "https://api.prashn.swastify.life"],
+        origin: [FRONTEND_URL, "https://prashn.swastify.life"],
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
         credentials: true,
     })
