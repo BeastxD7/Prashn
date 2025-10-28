@@ -4,7 +4,7 @@ import axios from 'axios';
 // 1. VITE_API_BASE_URL environment variable (preferred)
 // 2. Map known production frontend hostnames to their API host
 // 3. Fallback to localhost dev API
-const baseURL = import.meta.env.VITE_API_BASE_URL as string | "https://api.prashn.swastify.life";
+const baseURL = "https://api.prashn.swastify.life";
 
 export const apiClient = axios.create({
   baseURL,
