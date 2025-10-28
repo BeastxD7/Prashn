@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || "https://api.prashn.swastify.life/api/";
+const baseURL = import.meta.env.VITE_API_BASE_URL;
 console.log(baseURL);
 
 
