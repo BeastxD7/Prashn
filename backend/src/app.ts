@@ -29,6 +29,6 @@ app.use("/api/quiz", QuizRouter)
 app.use("/api/agent", AgentRouter);
 app.use("/api/dashboard", DashboardRouter);
 
-app.listen(3000, () => {
+app.listen(3002, () => {
     console.log("Server is running on port 3000")
 })
