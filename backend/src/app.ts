@@ -1,4 +1,5 @@
 import express from 'express'
+import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import UserRouter from './routes/user.route'
 import QuizRouter from './routes/quiz.route'
@@ -14,10 +15,14 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173' || 'htt
 app.use(
     cors({
         origin: FRONTEND_URL,
-        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
         credentials: true,
     })
 );
+
+// HTTP request logger
+const isProd = process.env.NODE_ENV === 'production';
+app.use(morgan(isProd ? 'combined' : 'dev'));
 app.use(express.json())
 // Parse cookies so `cookieAuth` middleware can read `req.cookies.access_token`
 app.use(cookieParser());

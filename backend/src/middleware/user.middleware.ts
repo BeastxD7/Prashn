@@ -70,3 +70,29 @@ export const cookieAuth = (req: Request, res: Response, next: NextFunction) => {
     res.status(401).json({ status: false, message: 'Token is not valid' });
   }
 };
+
+// Optional auth: if a valid token is present (cookie or Authorization header), set req.userId.
+// If no token or token invalid, continue without failing (useful for public routes that may accept both
+// authenticated and anonymous callers).
+export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let token = req.cookies?.access_token;
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+      }
+    }
+
+    if (!token) return next();
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as CustomJwtPayload;
+    if (decoded && decoded.userId) {
+      req.userId = decoded.userId;
+    }
+    return next();
+  } catch (err) {
+    // Don't block the request on invalid token — treat as unauthenticated
+    return next();
+  }
+};

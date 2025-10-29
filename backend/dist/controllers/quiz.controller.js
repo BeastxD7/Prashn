@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getQuizById = exports.generateQuizByAudio = exports.generateQuizByYoutube = exports.generateQuizByPdf = exports.editQuizQuestionsOnly = exports.saveQuiz = exports.generateQuizByText = void 0;
+exports.getQuizById = exports.generateQuizByAudio = exports.generateQuizByYoutube = exports.generateQuizByPdf = exports.editQuizQuestionsOnly = exports.saveQuiz = exports.toggleQuizRequireLogin = exports.toggleQuizPrivacy = exports.generateQuizByText = void 0;
 const prisma_1 = __importDefault(require("../db/prisma"));
 const quizllm_1 = require("../aiModels/quizllm");
 const fix_json_1 = require("../utils/fix_json");
@@ -150,12 +150,16 @@ const generateQuizByText = async (req, res) => {
             return res.status(422).json({ error: 'Generated questions have invalid format.' });
         }
         // Save quiz and questions atomically in the database
+        const isPublic = !!req.body.isPublic;
+        const requiresLogin = !!req.body.requiresLogin;
         const result = await prisma_1.default.$transaction(async (tx) => {
             const createdQuiz = await tx.quiz.create({
                 data: {
                     title,
                     description,
                     userId: req.userId,
+                    isPublic,
+                    requiresLogin,
                 },
             });
             const savedQuestions = await Promise.all(questionsArray.map((q) => tx.question.create({
@@ -185,6 +189,66 @@ const generateQuizByText = async (req, res) => {
     }
 };
 exports.generateQuizByText = generateQuizByText;
+// Owner-only: toggle or set the quiz's isPublic flag
+const toggleQuizPrivacy = async (req, res) => {
+    var _a;
+    try {
+        // Owner-only: update quiz.isPublic based on request body
+        const userId = req.userId;
+        if (!userId)
+            return res.status(401).json({ status: false, message: 'Unauthorized' });
+        const idParam = req.params.id;
+        const idNum = Number(idParam);
+        if (!Number.isFinite(idNum)) {
+            return res.status(400).json({ status: false, message: 'Invalid quiz id' });
+        }
+        const quiz = await prisma_1.default.quiz.findUnique({ where: { id: idNum } });
+        if (!quiz)
+            return res.status(404).json({ status: false, message: 'Quiz not found' });
+        if (quiz.userId !== userId)
+            return res.status(403).json({ status: false, message: 'Not authorized' });
+        const requested = (_a = req.body) === null || _a === void 0 ? void 0 : _a.isPublic;
+        if (typeof requested !== 'boolean') {
+            return res.status(400).json({ status: false, message: 'isPublic boolean is required in request body' });
+        }
+        const updated = await prisma_1.default.quiz.update({ where: { id: idNum }, data: { isPublic: requested } });
+        return res.status(200).json({ status: true, quiz: updated });
+    }
+    catch (error) {
+        console.error('Error updating quiz visibility:', error);
+        return res.status(500).json({ status: false, message: 'Failed to update quiz visibility' });
+    }
+};
+exports.toggleQuizPrivacy = toggleQuizPrivacy;
+// Owner-only: toggle or set the quiz's requiresLogin flag (require login to view when public)
+const toggleQuizRequireLogin = async (req, res) => {
+    var _a;
+    try {
+        const userId = req.userId;
+        if (!userId)
+            return res.status(401).json({ status: false, message: 'Unauthorized' });
+        const idParam = req.params.id;
+        const idNum = Number(idParam);
+        if (!Number.isFinite(idNum)) {
+            return res.status(400).json({ status: false, message: 'Invalid quiz id' });
+        }
+        const quiz = await prisma_1.default.quiz.findUnique({ where: { id: idNum } });
+        if (!quiz)
+            return res.status(404).json({ status: false, message: 'Quiz not found' });
+        if (quiz.userId !== userId)
+            return res.status(403).json({ status: false, message: 'Not authorized' });
+        // If body contains explicit requiresLogin, use it; otherwise toggle
+        const requested = (_a = req.body) === null || _a === void 0 ? void 0 : _a.requiresLogin;
+        const newRequiresLogin = typeof requested === 'boolean' ? requested : !quiz.requiresLogin;
+        const updated = await prisma_1.default.quiz.update({ where: { id: idNum }, data: { requiresLogin: newRequiresLogin } });
+        return res.status(200).json({ status: true, quiz: updated });
+    }
+    catch (error) {
+        console.error('Error toggling quiz requiresLogin:', error);
+        return res.status(500).json({ status: false, message: 'Failed to update quiz requiresLogin' });
+    }
+};
+exports.toggleQuizRequireLogin = toggleQuizRequireLogin;
 const saveQuiz = async (req, res) => {
     try {
         // TODO: userId should come from Request Auth Middleware
@@ -212,6 +276,8 @@ const saveQuiz = async (req, res) => {
                     title: quiz.title,
                     description: quiz.description,
                     userId: req.userId,
+                    isPublic: !!quiz.isPublic,
+                    requiresLogin: !!quiz.requiresLogin,
                 },
             });
             const savedQuestions = await Promise.all(questions.map((q) => tx.question.create({
@@ -237,7 +303,10 @@ const saveQuiz = async (req, res) => {
 exports.saveQuiz = saveQuiz;
 const editQuizQuestionsOnly = async (req, res) => {
     try {
-        // TODO: userId should come from Request Auth Middleware
+        const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized: Missing userId" });
+        }
         const { questions } = req.body;
         if (!Array.isArray(questions) || questions.length === 0) {
             return res.status(400).json({ error: 'Questions array is required and cannot be empty.' });
@@ -283,17 +352,36 @@ const editQuizQuestionsOnly = async (req, res) => {
             }
         }
         // Transactionally update all questions
-        const updatedQuestions = await prisma_1.default.$transaction(questions.map((q) => prisma_1.default.question.update({
-            where: { id: q.id },
-            data: {
-                type: q.type,
-                content: q.content,
-                options: q.options ? JSON.stringify(Array.isArray(q.options) ? q.options : JSON.parse(q.options)) : undefined,
-                answer: typeof q.answer === 'string' ? q.answer : JSON.stringify(q.answer),
-                explanation: q.explanation || null,
-                difficulty: q.difficulty || 'MEDIUM',
-            },
-        })));
+        const updatedQuestions = await prisma_1.default.$transaction(questions.map((q) => {
+            // Prepare a safe JSON value for options (Prisma's JSON type expects a JS value, not a string)
+            let optionsValue = undefined;
+            if (q.options !== undefined && q.options !== null) {
+                if (Array.isArray(q.options)) {
+                    optionsValue = q.options;
+                }
+                else {
+                    try {
+                        const parsed = JSON.parse(q.options);
+                        optionsValue = Array.isArray(parsed) ? parsed : [parsed];
+                    }
+                    catch (e) {
+                        // If parsing fails, wrap the raw value in an array to keep structure consistent
+                        optionsValue = [q.options];
+                    }
+                }
+            }
+            return prisma_1.default.question.update({
+                where: { id: q.id },
+                data: {
+                    type: q.type,
+                    content: q.content,
+                    options: optionsValue !== undefined ? optionsValue : undefined,
+                    answer: typeof q.answer === 'string' ? q.answer : JSON.stringify(q.answer),
+                    explanation: q.explanation || null,
+                    difficulty: q.difficulty || 'MEDIUM',
+                },
+            });
+        }));
         res.status(200).json({ quizId, updatedQuestions });
     }
     catch (error) {
@@ -582,7 +670,8 @@ const generateQuizByAudio = async (req, res) => {
 exports.generateQuizByAudio = generateQuizByAudio;
 const getQuizById = async (req, res) => {
     try {
-        const userId = req.userId;
+        // requesterId (may be undefined) is populated by optionalAuth middleware when a valid token is provided
+        const requesterId = req.userId;
         const { quizId } = req.query;
         const idNum = Number(quizId);
         if (!Number.isFinite(idNum)) {
@@ -595,9 +684,23 @@ const getQuizById = async (req, res) => {
         if (!quiz) {
             return res.status(404).json({ status: false, message: 'Quiz not found.' });
         }
-        // Indicate whether the requesting user owns this quiz
-        const isOwner = quiz.userId === userId;
-        res.status(200).json({ status: true, isOwner, quiz });
+        const isOwner = requesterId === quiz.userId;
+        // Owner always allowed
+        if (isOwner) {
+            return res.status(200).json({ status: true, isOwner, quiz });
+        }
+        // First: if quiz requires login, enforce authentication for non-owners
+        if (quiz.requiresLogin) {
+            if (!requesterId) {
+                return res.status(401).json({ status: false, message: 'Authentication required to view this quiz.' });
+            }
+            // authenticated non-owner: continue to visibility check
+        }
+        // Then check visibility: if public -> allow, if private -> deny (even to authenticated non-owners)
+        if (quiz.isPublic) {
+            return res.status(200).json({ status: true, isOwner: false, quiz });
+        }
+        return res.status(403).json({ status: false, message: 'Quiz is private.' });
     }
     catch (error) {
         console.error('Error fetching quiz by ID:', error);

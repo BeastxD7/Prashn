@@ -5,7 +5,7 @@ import { features } from "../constants/credits";
 export const getDashboardData = async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
-        // Fetch and compile dashboard data based on userId
+        
         const dashboardData = await prisma.user.findUnique({
             where: { id: userId },
             select: {
@@ -23,9 +23,30 @@ export const getDashboardData = async (req: Request, res: Response) => {
             image: feature.image
         }));
 
+        // Get top 3 most recent quizzes created by this user
+        const recentQuizzes = await prisma.quiz.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            take: 3,
+            select: {
+                id: true,
+                title: true,
+                createdAt: true,
+            },
+        });
+
+        // Compute stats: total quizzes and total questions created by this user
+        const totalQuizzes = await prisma.quiz.count({ where: { userId } });
+        const totalQuestions = await prisma.question.count({ where: { quiz: { userId } } });
+
         const data = {
             credits: dashboardData?.credits || 0,
             features: publicFeatures,
+            recentQuizzes,
+            stats: {
+                totalQuizzes,
+                totalQuestions,
+            },
         };
 
 

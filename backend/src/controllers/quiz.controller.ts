@@ -10,6 +10,7 @@ import { generateQuizByPdfSchema, generateQuizByTextSchema } from "../zodSchemas
 import { checkAndDeductCredits, getRequiredCreditsForQuestions, refundCredits } from "../utils/creditsUtil";
 import { parseBuffer } from "music-metadata";
 
+
 // Utility: Validate universal question schema (simplified)
 function validateQuestion(q: any): boolean {
   if (!q.type || typeof q.type !== "string") return false;
@@ -167,12 +168,16 @@ export const generateQuizByText = async (req: Request, res: Response) => {
     }
 
     // Save quiz and questions atomically in the database
+    const isPublic = !!req.body.isPublic;
+    const requiresLogin = !!req.body.requiresLogin;
     const result = await prisma.$transaction(async (tx) => {
       const createdQuiz = await tx.quiz.create({
         data: {
           title,
           description,
           userId: req.userId,
+          isPublic,
+          requiresLogin,
         },
       });
 
@@ -205,6 +210,66 @@ export const generateQuizByText = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error generating quiz:", error);
     res.status(500).json({ error: "Failed to generate quiz." });
+  }
+};
+
+// Owner-only: toggle or set the quiz's isPublic flag
+export const toggleQuizPrivacy = async (req: Request, res: Response) => {
+  try {
+    // Owner-only: update quiz.isPublic based on request body
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ status: false, message: 'Unauthorized' });
+
+    const idParam = req.params.id;
+    const idNum = Number(idParam);
+    if (!Number.isFinite(idNum)) {
+      return res.status(400).json({ status: false, message: 'Invalid quiz id' });
+    }
+
+    const quiz = await prisma.quiz.findUnique({ where: { id: idNum } });
+    if (!quiz) return res.status(404).json({ status: false, message: 'Quiz not found' });
+    if (quiz.userId !== userId) return res.status(403).json({ status: false, message: 'Not authorized' });
+
+    const requested = req.body?.isPublic;
+    if (typeof requested !== 'boolean') {
+      return res.status(400).json({ status: false, message: 'isPublic boolean is required in request body' });
+    }
+
+    const updated = await prisma.quiz.update({ where: { id: idNum }, data: { isPublic: requested } });
+
+    return res.status(200).json({ status: true, quiz: updated });
+  } catch (error) {
+    console.error('Error updating quiz visibility:', error);
+    return res.status(500).json({ status: false, message: 'Failed to update quiz visibility' });
+  }
+};
+
+// Owner-only: toggle or set the quiz's requiresLogin flag (require login to view when public)
+export const toggleQuizRequireLogin = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ status: false, message: 'Unauthorized' });
+
+    const idParam = req.params.id;
+    const idNum = Number(idParam);
+    if (!Number.isFinite(idNum)) {
+      return res.status(400).json({ status: false, message: 'Invalid quiz id' });
+    }
+
+    const quiz = await prisma.quiz.findUnique({ where: { id: idNum } });
+    if (!quiz) return res.status(404).json({ status: false, message: 'Quiz not found' });
+    if (quiz.userId !== userId) return res.status(403).json({ status: false, message: 'Not authorized' });
+
+    // If body contains explicit requiresLogin, use it; otherwise toggle
+    const requested = req.body?.requiresLogin;
+    const newRequiresLogin = typeof requested === 'boolean' ? requested : !quiz.requiresLogin;
+
+    const updated = await prisma.quiz.update({ where: { id: idNum }, data: { requiresLogin: newRequiresLogin } });
+
+    return res.status(200).json({ status: true, quiz: updated });
+  } catch (error) {
+    console.error('Error toggling quiz requiresLogin:', error);
+    return res.status(500).json({ status: false, message: 'Failed to update quiz requiresLogin' });
   }
 };
 
@@ -247,6 +312,8 @@ export const saveQuiz = async (req: Request, res: Response) => {
           title: quiz.title,
           description: quiz.description,
           userId: req.userId,
+          isPublic: !!quiz.isPublic,
+          requiresLogin: !!quiz.requiresLogin,
         },
       });
 
@@ -279,7 +346,14 @@ export const saveQuiz = async (req: Request, res: Response) => {
 export const editQuizQuestionsOnly = async (req: Request, res: Response) => {
   try {
 
-    // TODO: userId should come from Request Auth Middleware
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized: Missing userId" });
+    }
+
+
+
     const { questions } = req.body;
 
     if (!Array.isArray(questions) || questions.length === 0) {
@@ -333,19 +407,35 @@ export const editQuizQuestionsOnly = async (req: Request, res: Response) => {
 
     // Transactionally update all questions
     const updatedQuestions = await prisma.$transaction(
-      questions.map((q) =>
-        prisma.question.update({
+      questions.map((q) => {
+        // Prepare a safe JSON value for options (Prisma's JSON type expects a JS value, not a string)
+        let optionsValue: any = undefined;
+        if (q.options !== undefined && q.options !== null) {
+          if (Array.isArray(q.options)) {
+            optionsValue = q.options;
+          } else {
+            try {
+              const parsed = JSON.parse(q.options as string);
+              optionsValue = Array.isArray(parsed) ? parsed : [parsed];
+            } catch (e) {
+              // If parsing fails, wrap the raw value in an array to keep structure consistent
+              optionsValue = [q.options];
+            }
+          }
+        }
+
+        return prisma.question.update({
           where: { id: q.id },
           data: {
             type: q.type,
             content: q.content,
-            options: q.options ? JSON.stringify(Array.isArray(q.options) ? q.options : JSON.parse(q.options)) : undefined,
+            options: optionsValue !== undefined ? optionsValue : undefined,
             answer: typeof q.answer === 'string' ? q.answer : JSON.stringify(q.answer),
             explanation: q.explanation || null,
             difficulty: q.difficulty || 'MEDIUM',
           },
-        }),
-      ),
+        });
+      }),
     );
 
     res.status(200).json({ quizId, updatedQuestions });
@@ -704,9 +794,10 @@ const audioPrompt = `
 
 export const getQuizById = async (req: Request, res: Response) => {
   try {
-    const userId = req.userId;
-    const { quizId } = req.query;
+    // requesterId (may be undefined) is populated by optionalAuth middleware when a valid token is provided
+    const requesterId = req.userId;
 
+    const { quizId } = req.query;
     const idNum = Number(quizId);
     if (!Number.isFinite(idNum)) {
       return res.status(400).json({ message: 'Invalid quizId parameter.' });
@@ -721,10 +812,27 @@ export const getQuizById = async (req: Request, res: Response) => {
       return res.status(404).json({ status: false, message: 'Quiz not found.' });
     }
 
-    // Indicate whether the requesting user owns this quiz
-    const isOwner = quiz.userId === userId;
+    const isOwner = requesterId === quiz.userId;
 
-    res.status(200).json({ status: true, isOwner, quiz });
+    // Owner always allowed
+    if (isOwner) {
+      return res.status(200).json({ status: true, isOwner, quiz });
+    }
+
+    // First: if quiz requires login, enforce authentication for non-owners
+    if (quiz.requiresLogin) {
+      if (!requesterId) {
+        return res.status(401).json({ status: false, message: 'Authentication required to view this quiz.' });
+      }
+      // authenticated non-owner: continue to visibility check
+    }
+
+    // Then check visibility: if public -> allow, if private -> deny (even to authenticated non-owners)
+    if (quiz.isPublic) {
+      return res.status(200).json({ status: true, isOwner: false, quiz });
+    }
+
+    return res.status(403).json({ status: false, message: 'Quiz is private.' });
   } catch (error) {
     console.error('Error fetching quiz by ID:', error);
     res.status(500).json({ message: 'Failed to fetch quiz.' });
