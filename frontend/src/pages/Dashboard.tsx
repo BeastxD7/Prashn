@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { FeatureCard } from "@/components/FeatureCard"
 import { api } from "@/api/api"
 import { useAuth } from "@/context/AuthContext"
+import { Button } from "@/components/ui/button"
 
 interface DashboardData {
   credits: number
@@ -133,10 +134,13 @@ const Dashboard = () => {
                     <Plus className="w-4 h-4" />
                   </button>
 
-                  <button className="hidden sm:inline-flex bg-white/20 hover:bg-white/30 text-white font-semibold py-1 px-3 rounded-lg transition-colors items-center justify-center gap-2 text-xs sm:text-sm">
+                  <Link
+                    to="/add-credits"
+                    className="hidden sm:inline-flex bg-white/20 hover:bg-white/30 text-white font-semibold py-1 px-3 rounded-lg transition-colors items-center justify-center gap-2 text-xs sm:text-sm"
+                  >
                     <Plus className="w-4 h-4 flex-shrink-0" />
                     Add Credits
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
