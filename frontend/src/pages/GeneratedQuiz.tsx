@@ -14,6 +14,7 @@ export default function GeneratedQuizPage() {
   const [data, setData] = useState<any>(dataFromState)
   const [loading, setLoading] = useState(false)
   const [dirty, setDirty] = useState(false)
+  const [authRequiredMessage, setAuthRequiredMessage] = useState<string | null>(null)
 
   // Editable state and helpers (must be declared unconditionally to preserve Hooks order)
   const [editableQuestions, setEditableQuestions] = useState<any[] | null>(null)
@@ -33,7 +34,17 @@ export default function GeneratedQuizPage() {
           // prefer query-style endpoint
           const res = await api.quiz.getQuizById(Number(id))
           const payload = res?.data ?? null
-          if (mounted) setData(payload)
+          // If server responds that authentication is required to view this quiz,
+          // show a dedicated screen prompting the user to log in.
+          if (mounted) {
+            if (payload && payload.status === false && typeof payload.message === 'string' && /auth/i.test(payload.message)) {
+              setAuthRequiredMessage(payload.message)
+              setData(null)
+            } else {
+              setAuthRequiredMessage(null)
+              setData(payload)
+            }
+          }
         } catch (err) {
           console.error('Failed to fetch generated quiz by id', err)
         } finally {
@@ -207,6 +218,25 @@ export default function GeneratedQuizPage() {
   if (!data && loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">Loading...</div>
+    )
+  }
+  if (authRequiredMessage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="space-y-4 text-center max-w-lg">
+          <h2 className="text-lg font-semibold">Authentication required</h2>
+          <p className="text-sm text-muted-foreground">{authRequiredMessage}</p>
+          <div className="flex items-center justify-center gap-3">
+            <Link to="/login">
+              <Button>Sign in</Button>
+            </Link>
+            <Link to="/register">
+              <Button variant="outline">Create account</Button>
+            </Link>
+            <Button variant="ghost" onClick={() => navigate(-1)}>Back</Button>
+          </div>
+        </div>
+      </div>
     )
   }
 
