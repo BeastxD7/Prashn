@@ -30,23 +30,48 @@ export default function GeneratedQuizPage() {
     if (!data && id) {
       setLoading(true)
       ;(async () => {
+        // Helper: try multiple nesting shapes to find an auth-required message
+        const findAuthMessage = (obj: any): string | null => {
+          if (!obj) return null
+          const candidates = [obj, obj.data, obj.payload, obj.data?.data, obj.response]
+          for (const c of candidates) {
+            if (!c || typeof c !== 'object') continue
+            const status = c.status ?? c.success ?? null
+            const message = c.message ?? c.msg ?? c.error ?? null
+            if (status === false && typeof message === 'string' && /auth|authentication|required|login|sign in|signin/i.test(message)) {
+              return message
+            }
+          }
+          return null
+        }
+
         try {
           // prefer query-style endpoint
           const res = await api.quiz.getQuizById(Number(id))
-          const payload = res?.data ?? null
+          const payload = res?.data ?? res ?? null
+          const authMsg = findAuthMessage(res) ?? findAuthMessage(res?.data) ?? findAuthMessage(payload)
+
           // If server responds that authentication is required to view this quiz,
           // show a dedicated screen prompting the user to log in.
           if (mounted) {
-            if (payload && payload.status === false && typeof payload.message === 'string' && /auth/i.test(payload.message)) {
-              setAuthRequiredMessage(payload.message)
+            if (authMsg) {
+              setAuthRequiredMessage(authMsg)
               setData(null)
             } else {
               setAuthRequiredMessage(null)
               setData(payload)
             }
           }
-        } catch (err) {
-          console.error('Failed to fetch generated quiz by id', err)
+        } catch (err: any) {
+          // axios throws for non-2xx statuses — check error response body for auth messages too
+          const errData = err?.response?.data ?? err?.data ?? null
+          const authMsgFromErr = findAuthMessage(err) ?? findAuthMessage(errData)
+          if (mounted && authMsgFromErr) {
+            setAuthRequiredMessage(authMsgFromErr)
+            setData(null)
+          } else {
+            console.error('Failed to fetch generated quiz by id', err)
+          }
         } finally {
           if (mounted) setLoading(false)
         }
@@ -224,7 +249,7 @@ export default function GeneratedQuizPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="space-y-4 text-center max-w-lg">
-          <h2 className="text-lg font-semibold">Authentication required</h2>
+          <h2 className="text-lg font-semibold">Login to View this Quiz</h2>
           <p className="text-sm text-muted-foreground">{authRequiredMessage}</p>
           <div className="flex items-center justify-center gap-3">
             <Link to="/login">
