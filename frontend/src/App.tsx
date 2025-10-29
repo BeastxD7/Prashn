@@ -1,6 +1,7 @@
 import { ThemeProvider } from "@/components/theme-provider"
-import { BrowserRouter, Routes, Route, useLocation, Outlet } from "react-router-dom"
+import { BrowserRouter, Routes, Route, useLocation, Outlet, Navigate, useParams } from "react-router-dom"
 import { useState, useEffect } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { NavbarDemo } from "./components/navigation/Navbar"
 import Sidebar from "./components/navigation/Sidebar"
 
@@ -18,14 +19,14 @@ import GenerateQuizByPdf from "./pages/GenerateQuizByPdf"
 
 const navbarIncludedRoutes = ['/login', '/register', '/']
 
-function NavbarRenderer() {
+function NavbarRenderer({ sidebarCollapsed, setSidebarCollapsed }: { sidebarCollapsed: boolean; setSidebarCollapsed: Dispatch<SetStateAction<boolean>> }) {
   const location = useLocation()
   // show navbar only on listed routes
   if (navbarIncludedRoutes.includes(location.pathname)) {
     return <NavbarDemo />
   }
   // render sidebar for all other routes where navbar is not shown
-  return <Sidebar />
+  return <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
 }
 
 
@@ -48,6 +49,13 @@ function App() {
     return () => window.removeEventListener('storage', onStorage)
   }, [])
 
+  // persist collapsed state when it changes (keeps Sidebar and other tabs in sync)
+  useEffect(() => {
+    try {
+      localStorage.setItem('prashn.sidebar.collapsed', sidebarCollapsed ? '1' : '0')
+    } catch {}
+  }, [sidebarCollapsed])
+
   // ensure no horizontal scroll across the app
   useEffect(() => {
     const prev = document.body.style.overflowX
@@ -56,38 +64,68 @@ function App() {
       document.body.style.overflowX = prev
     }
   }, [])
-
   return (
     <>
-    <AuthProvider>
-      <BrowserRouter>
-        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-          <main className={`container w-screen min-h-screen m-auto flex flex-col items-center overflow-x-hidden ${
-            sidebarCollapsed ? 'md:pl-20' : 'md:pl-64'
-          }`}>
-            <NavbarRenderer />
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <AuthProvider>
+        <BrowserRouter>
+          <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+            {/* Layout uses useLocation, so keep it inside BrowserRouter */}
+            <Layout sidebarCollapsed={sidebarCollapsed}>
+              <NavbarRenderer sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} />
 
-              {/* Nested routes for the text generator so relative navigation works */}
-              <Route path="/generateQuizByText" element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
-                <Route index element={<GenerateQuizByTextPage />} />
-                <Route path=":id" element={<GeneratedQuizPage />} />
-              </Route>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
 
-              <Route path="/generateQuizByPdf" element={<ProtectedRoute><GenerateQuizByPdf /></ProtectedRoute>} />
-              <Route path="/" element={<HomePage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/test" element={<TestPage />} />
-            </Routes>
-          </main>
-        </ThemeProvider>
-      </BrowserRouter>
-      <Toaster />
+                {/* Nested routes for the text generator so relative navigation works */}
+                <Route path="/generateQuizByText" element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+                  <Route index element={<GenerateQuizByTextPage />} />
+                  <Route path=":id" element={<GeneratedQuizPage />} />
+                </Route>
+
+                {/* New canonical quiz resource route */}
+                <Route path="/quizzes/:id/view" element={<ProtectedRoute><GeneratedQuizPage /></ProtectedRoute>} />
+
+                {/* Backwards-compat redirect from old generate route to new resource route */}
+                <Route path="/generateQuizByText/:id" element={<RedirectOldQuiz />} />
+
+                <Route path="/generateQuizByPdf" element={<ProtectedRoute><GenerateQuizByPdf /></ProtectedRoute>} />
+                <Route path="/" element={<HomePage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/test" element={<TestPage />} />
+              </Routes>
+            </Layout>
+          </ThemeProvider>
+        </BrowserRouter>
+        <Toaster />
       </AuthProvider>
     </>
   )
+}
+
+// Layout component determines padding based on whether the navbar is shown
+function Layout({ children, sidebarCollapsed }: { children: React.ReactNode; sidebarCollapsed: boolean }) {
+  const location = useLocation()
+  const showNavbar = navbarIncludedRoutes.includes(location.pathname)
+
+  // when navbar is visible we don't apply left padding; when sidebar is visible apply it
+  const paddingClass = showNavbar ? '' : (sidebarCollapsed ? 'md:pl-20' : 'md:pl-64')
+
+  return (
+    <main className={`container w-screen min-h-screen m-auto flex flex-col items-center overflow-x-hidden ${paddingClass}`}>
+      {children}
+    </main>
+  )
+}
+
+// Redirect component to map old generate routes to the new canonical quiz resource route
+function RedirectOldQuiz() {
+  const params = useParams()
+  const id = params.id
+  // preserve location state if present
+  const location = useLocation()
+  if (!id) return <></>
+  return <Navigate to={`/quizzes/${id}/view`} replace state={(location.state as any) ?? undefined} />
 }
 
 export default App

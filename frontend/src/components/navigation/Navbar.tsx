@@ -33,13 +33,24 @@ export function NavbarDemo() {
       }
     }
 
+    // intercept navigation to protected routes and redirect to login if not authenticated
+    const handleNavItemClick = (e: React.MouseEvent, item: { name: string; link: string }) => {
+      // define protected route heuristic (adjust as needed)
+      const isProtected = item.link.startsWith('/dashboard') || item.link.startsWith('/generate')
+      if (isProtected && !user) {
+        e.preventDefault()
+        toast('Please login to access this page')
+        navigate('/login', { state: { from: item.link } })
+      }
+    }
+
   return (
     <div className="fixed w-full">
       <Navbar>
         {/* Desktop Navigation */}
-        <NavBody>
+          <NavBody>
           <NavbarLogo />
-          <NavItems items={navItems} />
+          <NavItems items={navItems} onItemClick={handleNavItemClick} />
           <div className="flex items-center gap-4 z-50">
             {!user ? (
               <NavbarButton onClick={() => navigate('/login')} variant="secondary">Login</NavbarButton>
@@ -68,7 +79,11 @@ export function NavbarDemo() {
               <a
                 key={`mobile-link-${idx}`}
                 href={item.link}
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={(ev) => {
+                  // use same interception for mobile links
+                  handleNavItemClick(ev as any as React.MouseEvent, item)
+                  setIsMobileMenuOpen(false)
+                }}
                 className="relative text-neutral-600 dark:text-neutral-300"
               >
                 <span className="block">{item.name}</span>

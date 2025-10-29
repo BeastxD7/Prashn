@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, Link, useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { api } from '@/api/api'
 import { toast } from 'sonner'
 
@@ -12,6 +13,15 @@ export default function GeneratedQuizPage() {
   const dataFromState = (location.state as any)?.quiz ?? null
   const [data, setData] = useState<any>(dataFromState)
   const [loading, setLoading] = useState(false)
+  const [dirty, setDirty] = useState(false)
+
+  // Editable state and helpers (must be declared unconditionally to preserve Hooks order)
+  const [editableQuestions, setEditableQuestions] = useState<any[] | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [isPublic, setIsPublic] = useState<boolean>(Boolean(data?.isPublic ?? data?.quiz?.isPublic ?? false))
+  const [privacyLoading, setPrivacyLoading] = useState(false)
+  const [requiresLogin, setRequiresLogin] = useState<boolean>(Boolean(data?.requiresLogin ?? data?.quiz?.requiresLogin ?? false))
+  const [requireLoading, setRequireLoading] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -39,9 +49,31 @@ export default function GeneratedQuizPage() {
     return () => { mounted = false }
   }, [data, params, navigate])
 
-  // Editable state and helpers (must be declared unconditionally to preserve Hooks order)
-  const [editableQuestions, setEditableQuestions] = useState<any[] | null>(null)
-  const [saving, setSaving] = useState(false)
+  // keep local isPublic synced when data loads/changes
+  useEffect(() => {
+    setIsPublic(Boolean(data?.isPublic ?? data?.quiz?.isPublic ?? false))
+    setRequiresLogin(Boolean(data?.requiresLogin ?? data?.quiz?.requiresLogin ?? false))
+  }, [data])
+
+  const handleSetRequireLogin = async (next: boolean) => {
+    const id = params.id ?? data?.quiz?.id ?? data?.id
+    if (!id) {
+      toast.error('Quiz id not available')
+      return
+    }
+    try {
+      setRequireLoading(true)
+      await api.quiz.setRequireLogin(Number(id), { requiresLoginkey: next })
+      setRequiresLogin(next)
+      setData((d: any) => ({ ...(d ?? {}), requiresLogin: next, quiz: { ...(d?.quiz ?? {}), requiresLogin: next } }))
+      toast.success(next ? 'Login required for this quiz' : 'Login no longer required')
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to update setting'
+      toast.error(msg)
+    } finally {
+      setRequireLoading(false)
+    }
+  }
 
   // NOTE: do not auto-enable edit mode on load. Owner can click Edit to start editing.
 
@@ -55,11 +87,19 @@ export default function GeneratedQuizPage() {
     return true
   }
 
+  // Helper: detect multiple-choice questions (common type names: MCQ, MULTIPLE_CHOICE, CHOICE)
+  // We keep this loose to support several backend type strings like 'MCQ', 'MULTIPLE_CHOICE', 'SINGLE_CHOICE', etc.
+  const isMCQ = (q: any) => {
+    const t = String(q?.type ?? '').toUpperCase()
+    return t === 'MCQ' || t.includes('MULTIPLE') || t.includes('CHOICE') || t.includes('MC')
+  }
+
   const updateQuestionField = (index: number, field: string, value: any) => {
     setEditableQuestions((prev) => {
       if (!prev) return prev
       const next = [...prev]
       next[index] = { ...next[index], [field]: value }
+      setDirty(true)
       return next
     })
   }
@@ -68,7 +108,17 @@ export default function GeneratedQuizPage() {
     setEditableQuestions((prev) => {
       if (!prev) return prev
       const next = [...prev]
-      next[qIndex].options = next[qIndex].options ? [...next[qIndex].options, ''] : ['']
+      const opts = Array.isArray(next[qIndex].options) ? [...next[qIndex].options] : []
+      // Prevent accidental double-add of a blank option (e.g. duplicate events)
+      if (opts.length > 0 && opts[opts.length - 1] === '') {
+        // don't add another empty option if the last one is still empty
+        next[qIndex] = { ...next[qIndex], options: opts }
+        return next
+      }
+      // mark dirty when adding an option
+      setDirty(true)
+      opts.push('')
+      next[qIndex] = { ...next[qIndex], options: opts }
       return next
     })
   }
@@ -78,6 +128,7 @@ export default function GeneratedQuizPage() {
       if (!prev) return prev
       const next = [...prev]
       next[qIndex].options = next[qIndex].options.filter((_: any, i: number) => i !== optIndex)
+      setDirty(true)
       return next
     })
   }
@@ -88,6 +139,7 @@ export default function GeneratedQuizPage() {
       const next = [...prev]
       next[qIndex].options = [...(next[qIndex].options || [])]
       next[qIndex].options[optIndex] = value
+      setDirty(true)
       return next
     })
   }
@@ -109,15 +161,39 @@ export default function GeneratedQuizPage() {
       const res = await api.quiz.editQuestions(payload)
       const respData = res?.data ?? null
       toast.success('Questions saved.')
-      // update local data with server response if present, else use editableQuestions
-      if (respData) {
-        // if server returns updated payload, use it
-        setData(respData)
-        const q = respData?.questions?.questions ?? respData?.questions ?? respData?.quiz?.questions ?? []
-        setEditableQuestions(JSON.parse(JSON.stringify(q)))
+      // After save, re-fetch authoritative quiz data from server to avoid stale shapes
+      const id = params.id ?? data?.quiz?.id ?? data?.id
+      if (id) {
+        try {
+          const fresh = await api.quiz.getQuizById(Number(id))
+          const freshData = fresh?.data ?? respData ?? null
+          if (freshData) {
+            setData(freshData)
+            const q = freshData?.questions?.questions ?? freshData?.questions ?? freshData?.quiz?.questions ?? []
+            setEditableQuestions(JSON.parse(JSON.stringify(q)))
+            setDirty(false)
+          }
+        } catch (fetchErr) {
+          // fallback: use respData or local editableQuestions
+          if (respData) {
+            setData(respData)
+            const q = respData?.questions?.questions ?? respData?.questions ?? respData?.quiz?.questions ?? []
+            setEditableQuestions(JSON.parse(JSON.stringify(q)))
+            setDirty(false)
+          } else {
+            setData((d: any) => ({ ...d, questions: { questions: editableQuestions }, quiz: { ...(d.quiz ?? {}), questions: editableQuestions } }))
+          }
+        }
       } else {
-        // reflect edits
-        setData((d: any) => ({ ...d, questions: { questions: editableQuestions }, quiz: { ...(d.quiz ?? {}), questions: editableQuestions } }))
+        // no id available, fall back to server response or local
+        if (respData) {
+          setData(respData)
+          const q = respData?.questions?.questions ?? respData?.questions ?? respData?.quiz?.questions ?? []
+          setEditableQuestions(JSON.parse(JSON.stringify(q)))
+          setDirty(false)
+        } else {
+          setData((d: any) => ({ ...d, questions: { questions: editableQuestions }, quiz: { ...(d.quiz ?? {}), questions: editableQuestions } }))
+        }
       }
     } catch (err: any) {
       console.error('Failed to save questions', err)
@@ -159,34 +235,91 @@ export default function GeneratedQuizPage() {
   // ownership flag added by the API to indicate whether current user owns this quiz
   const isOwner = Boolean(data?.isOwner ?? data?.quiz?.isOwner ?? false)
 
+  // (use handleSetPrivacy for changing privacy via the Switch)
+
+  // set privacy to explicit value (used by Switch)
+  const handleSetPrivacy = async (next: boolean) => {
+    const id = params.id ?? data?.quiz?.id ?? data?.id
+    if (!id) {
+      toast.error('Quiz id not available')
+      return
+    }
+    try {
+      setPrivacyLoading(true)
+      await api.quiz.setPrivacy(Number(id), { isPublic: next })
+      setIsPublic(next)
+      setData((d: any) => ({ ...(d ?? {}), isPublic: next, quiz: { ...(d?.quiz ?? {}), isPublic: next } }))
+      toast.success(next ? 'Quiz is now public' : 'Quiz is now private')
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to update privacy'
+      toast.error(msg)
+    } finally {
+      setPrivacyLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-background/85">
       <div className="mx-auto w-full max-w-4xl px-4 py-12">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">{quiz.title}</h1>
+            <h1 className="text-2xl font-semibold bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-400 text-transparent">{quiz.title}</h1>
             <p className="text-sm text-muted-foreground mt-1">{quiz.description}</p>
           </div>
           <div>
             <div className="flex items-center gap-2">
               <Button onClick={() => navigate(-1)} variant="outline">Back</Button>
               {isOwner && !editableQuestions ? (
-                <Button onClick={() => setEditableQuestions(JSON.parse(JSON.stringify(questions)))}>Edit</Button>
+                <Button onClick={() => { setEditableQuestions(JSON.parse(JSON.stringify(questions))); setDirty(false); }}>Edit</Button>
               ) : null}
+
+              {/* When editing, show privacy toggle for owners */}
+              {/* Privacy toggle visible to owners in view mode (not when editing) - switch + label */}
+              {/* Owner controls moved into a settings card below the header */}
             </div>
           </div>
         </div>
 
         <div className="space-y-6">
+          {isOwner ? (
+            <div className="mb-4 rounded-2xl border border-border/60 bg-gradient-to-br from-white/5 to-background/60 p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Switch checked={isPublic} disabled={privacyLoading || Boolean(editableQuestions)} onCheckedChange={(v) => handleSetPrivacy(Boolean(v))} />
+                    <div>
+                      <div className="text-sm font-medium">{isPublic ? 'Public' : 'Private'}</div>
+                      <div className="text-xs text-muted-foreground">Whether anyone can access this quiz</div>
+                    </div>
+                  </div>
+
+                  <div className="hidden sm:block h-full border-l border-border/40 ml-2 mr-2" />
+
+                  <div className="flex items-center gap-2">
+                    <Switch checked={requiresLogin} disabled={requireLoading || Boolean(editableQuestions)} onCheckedChange={(v) => handleSetRequireLogin(Boolean(v))} />
+                    <div>
+                      <div className="text-sm font-medium">{requiresLogin ? 'Requires login' : 'No login required'}</div>
+                      <div className="text-xs text-muted-foreground">Only signed-in users may take this quiz</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">Owner settings</div>
+              </div>
+            </div>
+          ) : null}
           {editableQuestions ? (
             <div className="space-y-4">
               <div className="flex items-center justify-end gap-2">
-                <Button variant="outline" onClick={() => { const q = data?.questions?.questions ?? data?.questions ?? data?.quiz?.questions ?? []; setEditableQuestions(JSON.parse(JSON.stringify(q))) }}>Reset</Button>
-                <Button onClick={handleSaveAll} disabled={saving}>{saving ? 'Saving...' : 'Save All'}</Button>
+                {dirty ? (
+                  <Button variant="outline" onClick={() => { const q = data?.questions?.questions ?? data?.questions ?? data?.quiz?.questions ?? []; setEditableQuestions(JSON.parse(JSON.stringify(q))); setDirty(false); }}>Reset</Button>
+                ) : null}
+                {dirty ? (
+                  <Button onClick={handleSaveAll} disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
+                ) : null}
               </div>
 
               {editableQuestions.map((q: any, idx: number) => (
-                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-background/60 p-4 space-y-3">
+                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-gradient-to-br from-white/5 to-background/60 p-4 space-y-3 shadow-sm">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="text-xs text-muted-foreground">Question {idx + 1}</div>
@@ -208,7 +341,7 @@ export default function GeneratedQuizPage() {
 
                   <div>
                     <label className="text-xs text-muted-foreground">Content</label>
-                    <textarea value={q.content} onChange={(e) => updateQuestionField(idx, 'content', e.target.value)} className="w-full rounded-md border border-border/50 bg-background/50 p-2 text-sm" />
+                    <textarea value={q.content} onChange={(e) => updateQuestionField(idx, 'content', e.target.value)} className="w-full rounded-md border border-border/50 bg-background/50 p-2 text-sm shadow-inner" />
                   </div>
 
                   {q.options ? (
@@ -218,10 +351,12 @@ export default function GeneratedQuizPage() {
                         {q.options.map((opt: string, oi: number) => (
                           <div key={oi} className="flex items-center gap-2">
                             <input value={opt} onChange={(e) => updateOption(idx, oi, e.target.value)} className="flex-1 rounded-md border border-border/50 bg-background/50 p-2 text-sm" />
-                            <Button variant="ghost" onClick={() => removeOption(idx, oi)}>Remove</Button>
+                            <Button variant="ghost" type="button" onClick={() => removeOption(idx, oi)}>Remove</Button>
                           </div>
                         ))}
-                        <Button variant="outline" onClick={() => addOption(idx)}>Add option</Button>
+                        {isMCQ(q) ? (
+                          <Button variant="outline" size="sm" type="button" onClick={() => addOption(idx)}>Add option</Button>
+                        ) : null}
                       </div>
                     </div>
                   ) : null}
@@ -239,9 +374,9 @@ export default function GeneratedQuizPage() {
               ))}
             </div>
           ) : (
-            <div>
+            <div className="space-y-4">
               {questions.map((q: any, idx: number) => (
-                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-background/60 p-4">
+                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-gradient-to-br from-white/2 to-background/60 p-4 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">Question {idx + 1}</div>
                     <div className="flex items-center gap-2">

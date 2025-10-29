@@ -114,6 +114,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Prevent horizontal scrollbars globally while preserving layout symmetry */
+  html, body, #root {
+    overflow-x: hidden;
+  }
   body {
     @apply bg-background text-foreground;
   }

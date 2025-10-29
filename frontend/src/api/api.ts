@@ -65,5 +65,15 @@ export const api = {
       const res = await apiClient.post<any>('quiz/edit-quiz-questions', payload)
       return res
     },
+    // Toggle privacy for a quiz (isPublic boolean)
+    setPrivacy: async (id: number, payload: { isPublic: boolean }): Promise<AxiosResponse<any> | null> => {
+      const res = await apiClient.patch<any>(`quiz/${id}/privacy`, payload)
+      return res
+    },
+    // Toggle whether quiz requires login to access
+    setRequireLogin: async (id: number, payload: { requiresLoginkey: boolean }): Promise<AxiosResponse<any> | null> => {
+      const res = await apiClient.patch<any>(`quiz/${id}/require-login`, payload)
+      return res
+    },
   },
 };

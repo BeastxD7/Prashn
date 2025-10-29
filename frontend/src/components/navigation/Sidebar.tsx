@@ -1,9 +1,15 @@
 import { NavLink } from 'react-router-dom'
 import { Home, LayoutGrid, FileText, CreditCard, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 
-export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
+type SidebarProps = {
+  collapsed?: boolean
+  setCollapsed?: Dispatch<SetStateAction<boolean>>
+}
+
+export default function Sidebar({ collapsed: collapsedProp, setCollapsed: setCollapsedProp }: SidebarProps) {
+  const [internalCollapsed, setInternalCollapsed] = useState<boolean>(() => {
     try {
       const v = localStorage.getItem('prashn.sidebar.collapsed')
       return v === '1'
@@ -12,13 +18,19 @@ export default function Sidebar() {
     }
   })
 
+  // controlled when props provided
+  const collapsed = typeof collapsedProp === 'boolean' ? collapsedProp : internalCollapsed
+  const setCollapsed = setCollapsedProp ?? setInternalCollapsed
+
   const [mobileOpen, setMobileOpen] = useState<boolean>(false)
 
+  // persist internal state only when uncontrolled
   useEffect(() => {
+    if (typeof collapsedProp === 'boolean') return
     try {
-      localStorage.setItem('prashn.sidebar.collapsed', collapsed ? '1' : '0')
+      localStorage.setItem('prashn.sidebar.collapsed', internalCollapsed ? '1' : '0')
     } catch {}
-  }, [collapsed])
+  }, [internalCollapsed, collapsedProp])
 
   const items = [
     { to: '/', label: 'Home', icon: <Home className="h-4 w-4" /> },

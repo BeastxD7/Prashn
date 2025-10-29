@@ -26,7 +26,7 @@ const calculateCredits = (questionCount: number) => {
 }
 
 const GenerateQuizByText = () => {
-  const [quizName, setQuizName] = useState("Photosynthesis")
+  const [quizName, setQuizName] = useState<string>("")
   const [description, setDescription] = useState("")
   const [showDescription, setShowDescription] = useState(false)
   const [textContent, setTextContent] = useState("")
@@ -41,8 +41,8 @@ const GenerateQuizByText = () => {
   const credits = calculateCredits(questionCount)
 
   const handleGenerate = async () => {
-    const trimmedTitle = quizName.trim()
-    if (trimmedTitle.length < 5) {
+    const trimmedTitle = quizName?.trim()
+    if (!trimmedTitle || trimmedTitle.length < 5) {
       toast.error("Title must be at least 5 characters.")
       return
     }
@@ -99,8 +99,8 @@ const GenerateQuizByText = () => {
         // /generateQuizByText/generate/:id and the results page can fetch by id
   const quizId = (data as any)?.quiz?.id ?? (data as any)?.quizId ?? (data as any)?.id
         if (quizId) {
-          // navigate to /generateQuizByText/:id (relative)
-          navigate(`${quizId}`, { state: { quiz: data } })
+          // navigate to canonical quiz resource route
+          navigate(`/quizzes/${quizId}/view`, { state: { quiz: data } })
         } else {
           // fallback to the relative generate route
           navigate('.', { state: { quiz: data } })

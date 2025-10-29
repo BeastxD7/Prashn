@@ -29,7 +29,8 @@ interface NavItemsProps {
     link: string;
   }[];
   className?: string;
-  onItemClick?: () => void;
+  // onItemClick receives the mouse event and the item clicked. It can call e.preventDefault()
+  onItemClick?: (e: React.MouseEvent, item: { name: string; link: string }) => void;
 }
 
 interface MobileNavProps {
@@ -128,7 +129,7 @@ export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
       {items.map((item, idx) => (
         <Link
           onMouseEnter={() => setHovered(idx)}
-          onClick={onItemClick}
+          onClick={(e) => onItemClick ? onItemClick(e, item) : undefined}
           className="relative px-4 py-2 text-neutral-600 dark:text-neutral-300"
           key={`link-${idx}`}
           to={item.link}
