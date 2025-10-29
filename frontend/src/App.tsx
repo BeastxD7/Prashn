@@ -84,7 +84,7 @@ function App() {
                 </Route>
 
                 {/* New canonical quiz resource route */}
-                <Route path="/quizzes/:id/view" element={<ProtectedRoute><GeneratedQuizPage /></ProtectedRoute>} />
+                <Route path="/quizzes/:id/view" element={<GeneratedQuizPage />} />
 
                 {/* Backwards-compat redirect from old generate route to new resource route */}
                 <Route path="/generateQuizByText/:id" element={<RedirectOldQuiz />} />
