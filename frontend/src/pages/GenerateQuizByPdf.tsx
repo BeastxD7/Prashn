@@ -127,7 +127,9 @@ const GenerateQuizByPdf = () => {
         // navigate to canonical quiz resource route
         const quizId = (data as any)?.quiz?.id ?? (data as any)?.quizId ?? (data as any)?.id
         if (quizId) {
-          navigate(`/quizzes/${quizId}/view`, { state: { quiz: data } })
+          // navigate without passing the full quiz state so the quiz view
+          // will fetch authoritative data (including ownership flags) from the server
+          navigate(`/quizzes/${quizId}/view`)
         } else {
           // fallback to the relative generate route
           navigate('.', { state: { quiz: data } })

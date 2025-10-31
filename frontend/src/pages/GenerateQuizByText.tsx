@@ -100,7 +100,7 @@ const GenerateQuizByText = () => {
   const quizId = (data as any)?.quiz?.id ?? (data as any)?.quizId ?? (data as any)?.id
         if (quizId) {
           // navigate to canonical quiz resource route
-          navigate(`/quizzes/${quizId}/view`, { state: { quiz: data } })
+          navigate(`/quizzes/${quizId}/view` )
         } else {
           // fallback to the relative generate route
           navigate('.', { state: { quiz: data } })
