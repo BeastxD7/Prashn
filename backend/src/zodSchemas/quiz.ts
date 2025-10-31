@@ -14,7 +14,7 @@ export const generateQuizByTextSchema = z.object({
 
 export const generateQuizByPdfSchema = z.object({
   title: z.string().min(5).max(100),
-  description: z.string().min(10).max(300),
+  description: z.string().min(10).max(300).optional(),
   questionTypes: z
     .preprocess((val) => {
       if (Array.isArray(val)) {

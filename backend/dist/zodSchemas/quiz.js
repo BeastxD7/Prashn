@@ -18,7 +18,7 @@ exports.generateQuizByTextSchema = zod_1.default.object({
 });
 exports.generateQuizByPdfSchema = zod_1.default.object({
     title: zod_1.default.string().min(5).max(100),
-    description: zod_1.default.string().min(10).max(300),
+    description: zod_1.default.string().min(10).max(300).optional(),
     questionTypes: zod_1.default
         .preprocess((val) => {
         if (Array.isArray(val)) {
