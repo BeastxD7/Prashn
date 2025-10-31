@@ -6,7 +6,6 @@ import { Link } from 'react-router-dom'
 import { FeatureCard } from "@/components/FeatureCard"
 import { api } from "@/api/api"
 import { useAuth } from "@/context/AuthContext"
-import { Button } from "@/components/ui/button"
 
 interface DashboardData {
   credits: number
@@ -130,9 +129,9 @@ const Dashboard = () => {
 
                 {/* Add credits: icon-only on small screens, full button on sm+ */}
                 <div className="w-full flex items-center justify-center sm:justify-start">
-                  <button className="sm:hidden w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
+                  <Link to="/add-credits" className="sm:hidden w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
                     <Plus className="w-4 h-4" />
-                  </button>
+                  </Link>
 
                   <Link
                     to="/add-credits"

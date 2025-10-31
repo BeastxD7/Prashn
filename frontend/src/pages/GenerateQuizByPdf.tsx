@@ -1,25 +1,67 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ModeToggle } from "@/components/mode-toggle"
-import { Upload } from "lucide-react"
+import { Upload, Loader2 } from "lucide-react"
+import { api } from "@/api/api"
+import { toast } from "sonner"
+import type { QuestionType } from "@/api/types"
 
-const QUESTION_TYPES = ["MCQ", "True / False", "Short Answer", "Fill in the Blank"]
-const DIFFICULTY_LEVELS = ["Easy", "Medium", "Hard"]
+const QUESTION_TYPES = ["MCQ", "True / False", "Short Answer", "Fill in the Blank"] as const
+const QUESTION_TYPE_VALUE_MAP: Record<(typeof QUESTION_TYPES)[number], QuestionType> = {
+  "MCQ": "MCQ",
+  "True / False": "TRUE_FALSE",
+  "Short Answer": "SHORT_ANSWER",
+  "Fill in the Blank": "FILL_IN_THE_BLANK",
+}
+const DIFFICULTY_LEVELS = ["Easy", "Medium", "Hard"] as const
 
-const calculateCredits = (questionCount: number) => questionCount
+// Credit tiers:
+// • up to 5 questions  -> 2 credits
+// • up to 15 questions -> 3 credits
+// • up to 30 questions -> 4 credits
+// For now, anything above 30 will use the 30-question tier (4 credits).
+const calculateCredits = (questionCount: number) => {
+  if (questionCount <= 5) return 2
+  if (questionCount <= 15) return 3
+  if (questionCount <= 30) return 4
+  return 4
+}
 
 const GenerateQuizByPdf = () => {
-  const [quizName, setQuizName] = useState("Photosynthesis Quiz")
+  const navigate = useNavigate()
+  const [quizName, setQuizName] = useState("")
   const [description, setDescription] = useState("")
   const [showDescription, setShowDescription] = useState(false)
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [questionCount, setQuestionCount] = useState(5)
   const [selectedTypes, setSelectedTypes] = useState<string[]>([QUESTION_TYPES[0]])
   const [difficulty, setDifficulty] = useState("Medium")
+  const [userCredits, setUserCredits] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const credits = calculateCredits(questionCount)
+  useEffect(() => {
+    // Fetch user credits when component mounts
+    let mounted = true
+    const fetchCredits = async () => {
+      try {
+        const res = await api.user.getCredits()
+        const data = res?.data?.data ?? res?.data
+        // expected shape: ApiResponse<{ credits: number }>
+        const credits = data?.credits ?? data?.data?.credits ?? null
+        if (mounted) setUserCredits(typeof credits === 'number' ? credits : null)
+      } catch (err: any) {
+        console.error('Failed to fetch credits', err)
+        toast.error('Unable to fetch credits')
+      }
+    }
+    fetchCredits()
+    return () => { mounted = false }
+  }, [])
+
+  const creditsNeeded = calculateCredits(questionCount)
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -30,15 +72,85 @@ const GenerateQuizByPdf = () => {
     }
   }
 
-  const handleGenerateQuiz = () => {
+  const handleGenerateQuiz = async () => {
     if (!pdfFile) {
-      alert("Please upload a PDF file before generating the quiz.")
+      toast.error("Please upload a PDF file before generating the quiz.")
       return
     }
 
-    // TODO: You can add logic here to extract text from the PDF
-    // using something like pdfjs or send to backend for quiz generation
-    console.log("Generating quiz from:", pdfFile.name)
+    const trimmedTitle = quizName?.trim()
+    if (!trimmedTitle || trimmedTitle.length < 5) {
+      toast.error("Title must be at least 5 characters.")
+      return
+    }
+
+    const trimmedDescription = description.trim()
+    if (showDescription && trimmedDescription.length > 0 && trimmedDescription.length < 10) {
+      toast.error("Description must be at least 10 characters when provided.")
+      return
+    }
+
+    const finalDescription =
+      trimmedDescription.length >= 10
+        ? trimmedDescription
+        : "Auto-generated quiz based on the provided PDF content."
+
+    // Map question types to backend enum values
+    const mappedQuestionTypes = selectedTypes
+      .map((label) => QUESTION_TYPE_VALUE_MAP[label as (typeof QUESTION_TYPES)[number]])
+      .filter(Boolean) as QuestionType[]
+
+    try {
+      setLoading(true)
+
+      // Build FormData matching the API structure
+      const formData = new FormData()
+      formData.append('pdfFile', pdfFile)
+      formData.append('title', trimmedTitle)
+      formData.append('description', finalDescription)
+      formData.append('questionTypes', JSON.stringify(mappedQuestionTypes))
+      formData.append('difficulty', difficulty.toUpperCase()) // EASY, MEDIUM, HARD
+      formData.append('numOfQuestions', String(questionCount))
+
+      const response = await api.quiz.generateByPdf(formData)
+      const data = response?.data
+
+      if (!data) {
+        toast.error("Failed to generate quiz. Please try again.")
+        return
+      }
+
+      toast.success("Quiz generated successfully.")
+
+      // Navigate to the generated quiz page and pass the quiz data via location state
+      try {
+        // navigate to canonical quiz resource route
+        const quizId = (data as any)?.quiz?.id ?? (data as any)?.quizId ?? (data as any)?.id
+        if (quizId) {
+          navigate(`/quizzes/${quizId}/view`, { state: { quiz: data } })
+        } else {
+          // fallback to the relative generate route
+          navigate('.', { state: { quiz: data } })
+        }
+      } catch (e) {
+        // ignore navigation error
+      }
+
+      // If backend returned credits charged, update local cached credits
+      if (typeof data.creditsCharged === 'number') {
+        setUserCredits((prev) => {
+          if (prev === null) return prev
+          return Math.max(0, prev - data.creditsCharged!)
+        })
+      }
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ?? error?.message ?? "Unable to generate quiz right now."
+      toast.error(message)
+      console.error("generateByPdf error", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -196,17 +308,20 @@ const GenerateQuizByPdf = () => {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium opacity-90">Available Credits</p>
-                    <p className="text-3xl font-bold">4</p>
+                    <p className="text-3xl font-bold">{userCredits ?? 0}</p>
                   </div>
                   <div>
-                    <Button className="rounded-md bg-white text-blue-600 hover:bg-white/90 font-semibold px-4 py-2">
+                    <Button 
+                      onClick={() => navigate('/add-credits')}
+                      className="rounded-md bg-white text-blue-600 hover:bg-white/90 font-semibold px-4 py-2"
+                    >
                       + Add Credits
                     </Button>
                   </div>
                 </div>
                 <div className="rounded-lg bg-white/10 p-3 backdrop-blur">
                   <p className="text-xs opacity-75">This quiz will consume</p>
-                  <p className="text-lg font-semibold">{credits} credits</p>
+                  <p className="text-lg font-semibold">{creditsNeeded} credits</p>
                 </div>
               </div>
             </div>
@@ -256,9 +371,17 @@ const GenerateQuizByPdf = () => {
 
               <button
                 onClick={handleGenerateQuiz}
-                className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:shadow-xl hover:from-blue-600 hover:via-cyan-600 hover:to-teal-600 dark:from-blue-600 dark:via-cyan-600 dark:to-teal-600"
+                disabled={loading || !pdfFile}
+                className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:shadow-xl hover:from-blue-600 hover:via-cyan-600 hover:to-teal-600 dark:from-blue-600 dark:via-cyan-600 dark:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Generate Quiz
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </span>
+                ) : (
+                  'Generate Quiz'
+                )}
               </button>
             </div>
           </div>
