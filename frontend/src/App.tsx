@@ -17,6 +17,7 @@ import GenerateQuizByTextPage from "./pages/GenerateQuizByText"
 import GeneratedQuizPage from "./pages/GeneratedQuiz"
 import GenerateQuizByPdf from "./pages/GenerateQuizByPdf"
 import AddCreditsPage from "./pages/AddCredits"
+import GenerateQuizByYoutube from "./pages/GenerateQuizByYoutube"
 
 const navbarIncludedRoutes = ['/login', '/register', '/']
 
@@ -91,6 +92,7 @@ function App() {
                 <Route path="/generateQuizByText/:id" element={<RedirectOldQuiz />} />
 
                 <Route path="/generateQuizByPdf" element={<ProtectedRoute><GenerateQuizByPdf /></ProtectedRoute>} />
+                <Route path="/generateQuizByYoutube" element={<ProtectedRoute><GenerateQuizByYoutube /></ProtectedRoute>} />
                 <Route path="/add-credits" element={<ProtectedRoute><AddCreditsPage /></ProtectedRoute>} />
                 <Route path="/" element={<HomePage />} />
                 <Route path="/register" element={<RegisterPage />} />

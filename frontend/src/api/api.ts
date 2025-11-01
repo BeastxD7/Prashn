@@ -65,6 +65,15 @@ export const api = {
       );
       return res;
     },
+    generateByYoutube: async (
+      payload: any
+    ): Promise<AxiosResponse<any> | null> => {
+      const res = await apiClient.post<any>(
+        'quiz/generate-quiz-by-youtube',
+        payload
+      );
+      return res;
+    },
     getById: async (id: number): Promise<AxiosResponse<any> | null> => {
       // returns the quiz with questions: { status, quiz, questions, noOfQuestions, creditsCharged }
       const res = await apiClient.get<any>(`get-quiz-by-id/${id}`)

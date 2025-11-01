@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, LayoutGrid, FileText, CreditCard, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react'
+import { Home, LayoutGrid, FileText, CreditCard, ChevronLeft, ChevronRight, Menu, X, Youtube } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 
@@ -37,6 +37,7 @@ export default function Sidebar({ collapsed: collapsedProp, setCollapsed: setCol
     { to: '/dashboard', label: 'Dashboard', icon: <LayoutGrid className="h-4 w-4" /> },
     { to: '/generateQuizByText', label: 'Generator', icon: <FileText className="h-4 w-4" /> },
     { to: '/generateQuizByPdf', label: 'PDF', icon: <FileText className="h-4 w-4" /> },
+    { to: '/generateQuizByYoutube', label: 'YouTube', icon: <Youtube className="h-4 w-4" /> },
     { to: '/credits', label: 'Credits', icon: <CreditCard className="h-4 w-4" /> },
   ]
 
