@@ -676,28 +676,75 @@ export const generateQuizByYoutube = async (req: Request, res: Response) => {
 
     // Step 4: Fix JSON & parse
     const fixedJson = fixJsonStructure(llmResponse);
-    if (!fixedJson) return res.status(422).json({ error: 'LLM output was not valid JSON.' });
+    if (!fixedJson) {
+      await refundCredits(userId, requiredCredits);
+      return res.status(422).json({ error: 'LLM output was not valid JSON.' });
+    }
 
-    const questions = JSON.parse(fixedJson);
-    // console.log(questions);
+    const parsed = JSON.parse(fixedJson);
 
+    // Normalize parsed structure into an array of question objects
+    const questionsArray: any[] = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.questions)
+      ? parsed.questions
+      : [];
 
+    // Enforce exact number of questions (truncate if too many)
+    if (questionsArray.length > sanitizedQuestions) {
+      questionsArray.splice(sanitizedQuestions);
+    }
 
-    // Step 5: Validate questions
-    if (
-      !questions ||
-      !Array.isArray(questions.questions) ||
-      questions.questions.some((q: any) => !validateQuestion(q))
-    ) {
+    // Pad with repeated last question if fewer than needed (optional)
+    while (questionsArray.length < sanitizedQuestions && questionsArray.length > 0) {
+      questionsArray.push(questionsArray[questionsArray.length - 1]);
+    }
+
+    // Validate questions before saving
+    if (questionsArray.length === 0 || questionsArray.some((q) => !validateQuestion(q))) {
+      // Refund credits because generation failed/invalid
+      await refundCredits(userId, requiredCredits);
       return res.status(422).json({ error: 'Generated questions have invalid format.' });
     }
 
+    // Save quiz and questions atomically in the database
+    const isPublic = !!req.body.isPublic;
+    const requiresLogin = !!req.body.requiresLogin;
+    const result = await prisma.$transaction(async (tx) => {
+      const createdQuiz = await tx.quiz.create({
+        data: {
+          title,
+          description,
+          userId: req.userId,
+          isPublic,
+          requiresLogin,
+        },
+      });
 
-    // Step 6: Return generated quiz
-    return res.status(200).json({
-      quiz: { title, description, userId: req.userId },
-      noOfQuestions: questions.questions.length,
-      questions: questions.questions,
+      const savedQuestions = await Promise.all(
+        questionsArray.map((q) =>
+          tx.question.create({
+            data: {
+              quizId: createdQuiz.id,
+              type: q.type,
+              content: q.content,
+              options: q.options || null,
+              answer: JSON.stringify(q.answer),
+              explanation: q.explanation || null,
+              difficulty: q.difficulty || 'MEDIUM',
+            },
+          })
+        )
+      );
+
+      return { quiz: createdQuiz, questions: savedQuestions };
+    });
+
+    return res.status(201).json({
+      status: true,
+      quiz: result.quiz,
+      questions: result.questions,
+      noOfQuestions: result.questions.length,
       creditsCharged: requiredCredits,
     });
   } catch (error) {
