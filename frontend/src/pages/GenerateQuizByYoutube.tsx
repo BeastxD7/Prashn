@@ -32,6 +32,9 @@ export default function GenerateQuizByYoutube() {
   const [description, setDescription] = useState("")
   const [showDescription, setShowDescription] = useState(false)
   const [youtubeUrl, setYoutubeUrl] = useState("")
+  const [videoId, setVideoId] = useState<string | null>(null)
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null)
+  const [thumbFallbackTried, setThumbFallbackTried] = useState(false)
   const [questionCount, setQuestionCount] = useState(5)
   const [selectedTypes, setSelectedTypes] = useState<string[]>([QUESTION_TYPES[0]])
   const [difficulty, setDifficulty] = useState("Medium")
@@ -66,6 +69,41 @@ export default function GenerateQuizByYoutube() {
       return false
     }
   }
+
+  const extractYoutubeVideoId = (url: string) => {
+    try {
+      const u = new URL(url)
+      if (u.hostname.includes('youtu.be')) {
+        return u.pathname.slice(1) || null
+      }
+
+      if (u.hostname.includes('youtube.com')) {
+        // common patterns: /watch?v=ID, /embed/ID, /shorts/ID
+        const v = u.searchParams.get('v')
+        if (v) return v
+        const parts = u.pathname.split('/').filter(Boolean)
+        if (parts[0] === 'embed' && parts[1]) return parts[1]
+        if (parts[0] === 'shorts' && parts[1]) return parts[1]
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null
+  }
+
+  // When the youtube url changes, try to extract a video id and set a thumbnail
+  useEffect(() => {
+    const id = extractYoutubeVideoId(youtubeUrl.trim())
+    if (id) {
+      setVideoId(id)
+      setThumbFallbackTried(false)
+      setThumbnailUrl(`https://img.youtube.com/vi/${id}/maxresdefault.jpg`)
+    } else {
+      setVideoId(null)
+      setThumbnailUrl(null)
+      setThumbFallbackTried(false)
+    }
+  }, [youtubeUrl])
 
   const handleGenerate = async () => {
     const trimmedTitle = title.trim()
@@ -177,7 +215,25 @@ export default function GenerateQuizByYoutube() {
 
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">YouTube URL</label>
-                  <Input placeholder="https://youtu.be/..." className="bg-background/60" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} />
+                  <Input placeholder="https://youtu.be/example" className="bg-background/60" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} />
+                  {thumbnailUrl && (
+                    <div className="mt-3 flex justify-center items-center">
+                      <img
+                        src={thumbnailUrl}
+                        alt="YouTube thumbnail"
+                        className="w-full max-w-xs rounded-md object-cover"
+                        onError={() => {
+                          // fallback to hqdefault once, then hide if that fails too
+                          if (videoId && !thumbFallbackTried) {
+                            setThumbnailUrl(`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`)
+                            setThumbFallbackTried(true)
+                          } else {
+                            setThumbnailUrl(null)
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </section>
