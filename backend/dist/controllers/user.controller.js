@@ -60,7 +60,7 @@ const loginUser = async (req, res) => {
             httpOnly: true,
             secure: isProd,
             sameSite: isProd ? 'none' : 'lax',
-            maxAge: 60 * 60 * 1000,
+            maxAge: 24 * 60 * 60 * 1000,
             path: '/',
         });
         res.status(200).json({ status: true, message: 'Login successful', token });
