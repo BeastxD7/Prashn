@@ -1,10 +1,23 @@
+"use client"
 
-const LoginPage = () => {
+import Link from "next/link"
+import LoginForm from "./LoginForm"
+import useAuth from "@/context/auth-provider"
+export default function LoginPage() {
+
+  const {user} = useAuth()
+  console.log(user)  
   return (
-    <div className='min-h-screen w-full flex items-center justify-center px-4 py-12 bg-background'> 
-      Login
-    </div>
+    <div className="w-full h-[90vh] flex items-center justify-center px-4 py-12">
+          <div className="flex items-center justify-center">
+            <div className="w-full">
+              <LoginForm />
+              <div className="mt-4 text-sm text-center text-muted-foreground">
+                Don't have an account?{' '}
+                <Link href="/register" className="text-primary underline-offset-4 hover:underline">Create an account</Link>
+              </div>
+            </div>
+        </div>
+      </div>
   )
 }
-
-export default LoginPage
