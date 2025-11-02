@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2 } from "lucide-react"
+import { Upload, Loader2 } from "lucide-react"
 import { api } from "@/api/api"
 import { toast } from "sonner"
 import type { QuestionType } from "@/api/types"
@@ -17,7 +17,7 @@ const QUESTION_TYPE_VALUE_MAP: Record<(typeof QUESTION_TYPES)[number], QuestionT
 }
 const DIFFICULTY_LEVELS = ["Easy", "Medium", "Hard"] as const
 
-// Use the same credit tiers as PDF generator
+// Same credit tiers as PDF / YouTube
 const calculateCredits = (questionCount: number) => {
   if (questionCount <= 5) return 2
   if (questionCount <= 15) return 3
@@ -25,22 +25,17 @@ const calculateCredits = (questionCount: number) => {
   return 4
 }
 
-export default function GenerateQuizByYoutube() {
+export default function GenerateQuizByAudio() {
   const navigate = useNavigate()
-  const [title, setTitle] = useState("")
+  const [quizName, setQuizName] = useState("")
   const [description, setDescription] = useState("")
   const [showDescription, setShowDescription] = useState(false)
-  const [youtubeUrl, setYoutubeUrl] = useState("")
-  const [videoId, setVideoId] = useState<string | null>(null)
-  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null)
-  const [thumbFallbackTried, setThumbFallbackTried] = useState(false)
+  const [audioFile, setAudioFile] = useState<File | null>(null)
   const [questionCount, setQuestionCount] = useState(5)
   const [selectedTypes, setSelectedTypes] = useState<string[]>([QUESTION_TYPES[0]])
   const [difficulty, setDifficulty] = useState("Medium")
   const [userCredits, setUserCredits] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
-
-  const creditsNeeded = calculateCredits(questionCount)
 
   useEffect(() => {
     let mounted = true
@@ -59,60 +54,27 @@ export default function GenerateQuizByYoutube() {
     return () => { mounted = false }
   }, [])
 
-  const validateYoutube = (url: string) => {
-    if (!url) return false
-    try {
-      const u = new URL(url)
-      return u.hostname.includes('youtube.com') || u.hostname.includes('youtu.be')
-    } catch {
-      return false
+  const creditsNeeded = calculateCredits(questionCount)
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('audio/') && !/\.(mp3|wav|m4a|aac|ogg)$/i.test(file.name)) {
+      toast.error('Please upload a valid audio file (mp3, wav, m4a, etc).')
+      return
     }
+    setAudioFile(file)
   }
-
-  const extractYoutubeVideoId = (url: string) => {
-    try {
-      const u = new URL(url)
-      if (u.hostname.includes('youtu.be')) {
-        return u.pathname.slice(1) || null
-      }
-
-      if (u.hostname.includes('youtube.com')) {
-        // common patterns: /watch?v=ID, /embed/ID, /shorts/ID
-        const v = u.searchParams.get('v')
-        if (v) return v
-        const parts = u.pathname.split('/').filter(Boolean)
-        if (parts[0] === 'embed' && parts[1]) return parts[1]
-        if (parts[0] === 'shorts' && parts[1]) return parts[1]
-      }
-    } catch (e) {
-      // ignore
-    }
-    return null
-  }
-
-  // When the youtube url changes, try to extract a video id and set a thumbnail
-  useEffect(() => {
-    const id = extractYoutubeVideoId(youtubeUrl.trim())
-    if (id) {
-      setVideoId(id)
-      setThumbFallbackTried(false)
-      setThumbnailUrl(`https://img.youtube.com/vi/${id}/maxresdefault.jpg`)
-    } else {
-      setVideoId(null)
-      setThumbnailUrl(null)
-      setThumbFallbackTried(false)
-    }
-  }, [youtubeUrl])
 
   const handleGenerate = async () => {
-    const trimmedTitle = title.trim()
-    if (!trimmedTitle || trimmedTitle.length < 5) {
-      toast.error('Title must be at least 5 characters.')
+    if (!audioFile) {
+      toast.error('Please upload an audio file before generating the quiz.')
       return
     }
 
-    if (!validateYoutube(youtubeUrl)) {
-      toast.error('Please provide a valid YouTube URL.')
+    const trimmedTitle = quizName?.trim()
+    if (!trimmedTitle || trimmedTitle.length < 5) {
+      toast.error('Title must be at least 5 characters.')
       return
     }
 
@@ -122,7 +84,10 @@ export default function GenerateQuizByYoutube() {
       return
     }
 
-    const finalDescription = trimmedDescription.length >= 10 ? trimmedDescription : 'Auto-generated quiz based on the YouTube video.'
+    const finalDescription =
+      trimmedDescription.length >= 10
+        ? trimmedDescription
+        : 'Auto-generated quiz based on the uploaded audio.'
 
     const mappedQuestionTypes = selectedTypes
       .map((label) => QUESTION_TYPE_VALUE_MAP[label as (typeof QUESTION_TYPES)[number]])
@@ -130,18 +95,16 @@ export default function GenerateQuizByYoutube() {
 
     try {
       setLoading(true)
-      const payload = {
-        title: trimmedTitle,
-        description: finalDescription,
-        youtubeUrl: youtubeUrl.trim(),
-        numOfQuestions: questionCount,
-        questionTypes: mappedQuestionTypes.length ? mappedQuestionTypes : undefined,
-        difficulty: difficulty.toUpperCase(),
-        lang: 'en',
-      }
+      const formData = new FormData()
+      formData.append('audioFile', audioFile)
+      formData.append('title', trimmedTitle)
+      formData.append('description', finalDescription)
+      formData.append('questionTypes', JSON.stringify(mappedQuestionTypes))
+      formData.append('difficulty', difficulty.toUpperCase())
+      formData.append('numOfQuestions', String(questionCount))
 
-      const res = await api.quiz.generateByYoutube(payload)
-      const data = res?.data
+      const response = await api.quiz.generateByAudio(formData)
+      const data = response?.data
       if (!data) {
         toast.error('Failed to generate quiz. Please try again.')
         return
@@ -161,10 +124,11 @@ export default function GenerateQuizByYoutube() {
       if (typeof data.creditsCharged === 'number') {
         setUserCredits((prev) => (prev === null ? prev : Math.max(0, prev - data.creditsCharged!)))
       }
-    } catch (err: any) {
-      const msg = err?.response?.data?.message ?? err?.message ?? 'Unable to generate quiz right now.'
-      toast.error(msg)
-      console.error('generateByYoutube error', err)
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ?? error?.message ?? 'Unable to generate quiz right now.'
+      toast.error(message)
+      console.error('generateByAudio error', error)
     } finally {
       setLoading(false)
     }
@@ -177,8 +141,8 @@ export default function GenerateQuizByYoutube() {
           <div className="space-y-3">
             <span className="text-xs font-semibold uppercase tracking-[0.32em] text-primary/80">Generator</span>
             <div className="space-y-2">
-              <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">Create quiz from YouTube</h1>
-              <p className="max-w-xl text-sm text-muted-foreground">Paste a YouTube URL and generate a quiz from the video's content.</p>
+              <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">Create quiz from audio</h1>
+              <p className="max-w-xl text-sm text-muted-foreground">Upload an audio file (lecture, podcast, voice memo) and generate a quiz from its content.</p>
             </div>
           </div>
         </header>
@@ -191,8 +155,8 @@ export default function GenerateQuizByYoutube() {
 
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Title</label>
-                  <Input placeholder="Enter quiz title" className="bg-background/60" value={title} onChange={(e) => setTitle(e.target.value)} />
+                  <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Name</label>
+                  <Input placeholder="Enter quiz title" className="bg-background/60" value={quizName} onChange={(e) => setQuizName(e.target.value)} />
                 </div>
 
                 {!showDescription && (
@@ -205,31 +169,21 @@ export default function GenerateQuizByYoutube() {
                       <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Description</label>
                       <button onClick={() => setShowDescription(false)} className="text-xs text-muted-foreground hover:text-foreground">Remove</button>
                     </div>
-                    <textarea className="h-24 w-full resize-none rounded-xl border border-border/60 bg-background/60 px-3 py-2 text-sm text-foreground shadow-inner outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20" placeholder="Add optional description..." value={description} onChange={(e) => setDescription(e.target.value)} />
+                    <textarea className="h-24 w-full resize-none rounded-xl border border-border/60 bg-background/60 px-3 py-2 text-sm text-foreground shadow-inner outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20" placeholder="Add optional description for the quiz..." value={description} onChange={(e) => setDescription(e.target.value)} />
                   </div>
                 )}
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">YouTube URL</label>
-                  <Input placeholder="https://youtu.be/example" className="bg-background/60" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} />
-                  {thumbnailUrl && (
-                    <div className="mt-3 flex justify-center items-center">
-                      <img
-                        src={thumbnailUrl}
-                        alt="YouTube thumbnail"
-                        className="w-full max-w-xs rounded-md object-cover"
-                        onError={() => {
-                          // fallback to hqdefault once, then hide if that fails too
-                          if (videoId && !thumbFallbackTried) {
-                            setThumbnailUrl(`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`)
-                            setThumbFallbackTried(true)
-                          } else {
-                            setThumbnailUrl(null)
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
+                  <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Upload audio</label>
+                  <div className="flex items-center justify-center w-full">
+                    <label htmlFor="audio-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-border/60 rounded-xl cursor-pointer bg-background/60 hover:bg-background/80 transition">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">{audioFile ? <span className="text-foreground font-medium">{audioFile.name}</span> : <>Click to upload or drag & drop an audio file</>}</p>
+                      </div>
+                      <input id="audio-upload" type="file" accept="audio/*" className="hidden" onChange={handleFileUpload} />
+                    </label>
+                  </div>
                 </div>
               </div>
             </section>

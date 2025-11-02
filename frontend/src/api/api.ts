@@ -74,6 +74,20 @@ export const api = {
       );
       return res;
     },
+    generateByAudio: async (
+      formData: FormData
+    ): Promise<AxiosResponse<any> | null> => {
+      const res = await apiClient.post<any>(
+        'quiz/generate-quiz-by-audio',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return res;
+    },
     getById: async (id: number): Promise<AxiosResponse<any> | null> => {
       // returns the quiz with questions: { status, quiz, questions, noOfQuestions, creditsCharged }
       const res = await apiClient.get<any>(`get-quiz-by-id/${id}`)

@@ -1,11 +1,8 @@
-const HomePage = () => {
+
+const Home = () => {
   return (
-    <>
-        <section className="pt-20">
-        <div>Home Page</div>
-        </section>
-    </>
+    <div className="py-20">Home</div>
   )
 }
 
-export default HomePage
+export default Home

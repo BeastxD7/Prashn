@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ModeToggle } from "@/components/mode-toggle"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { api } from "@/api/api"
@@ -157,9 +156,6 @@ const GenerateQuizByText = () => {
                 Paste your source material, adjust preferences, and generate a tailored quiz in seconds.
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-3 self-start rounded-full border border-border/60 bg-background/70 p-2 backdrop-blur sm:self-auto">
-            <ModeToggle />
           </div>
         </header>
 

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ModeToggle } from "@/components/mode-toggle"
 import { Upload, Loader2 } from "lucide-react"
 import { api } from "@/api/api"
 import { toast } from "sonner"
@@ -172,9 +171,7 @@ const GenerateQuizByPdf = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3 self-start rounded-full border border-border/60 bg-background/70 p-2 backdrop-blur sm:self-auto">
-            <ModeToggle />
-          </div>
+
         </header>
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">

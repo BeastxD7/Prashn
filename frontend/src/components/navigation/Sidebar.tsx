@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom'
-import { Home, LayoutGrid, FileText, CreditCard, ChevronLeft, ChevronRight, Menu, X, Youtube } from 'lucide-react'
+import { Home, LayoutGrid, FileText, CreditCard, ChevronLeft, ChevronRight, Menu, X, Youtube,FileMusic, ClipboardType } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
+import { ModeToggle } from "@/components/mode-toggle"
 
 type SidebarProps = {
   collapsed?: boolean
@@ -35,9 +36,10 @@ export default function Sidebar({ collapsed: collapsedProp, setCollapsed: setCol
   const items = [
     { to: '/', label: 'Home', icon: <Home className="h-4 w-4" /> },
     { to: '/dashboard', label: 'Dashboard', icon: <LayoutGrid className="h-4 w-4" /> },
-    { to: '/generateQuizByText', label: 'Generator', icon: <FileText className="h-4 w-4" /> },
+    { to: '/generateQuizByText', label: 'Generator', icon: <ClipboardType className="h-4 w-4" /> },
     { to: '/generateQuizByPdf', label: 'PDF', icon: <FileText className="h-4 w-4" /> },
     { to: '/generateQuizByYoutube', label: 'YouTube', icon: <Youtube className="h-4 w-4" /> },
+    { to: '/generateQuizByAudio', label: 'Audio', icon: <FileMusic className="h-4 w-4" /> },
     { to: '/credits', label: 'Credits', icon: <CreditCard className="h-4 w-4" /> },
   ]
 
@@ -96,8 +98,13 @@ export default function Sidebar({ collapsed: collapsedProp, setCollapsed: setCol
 
         <div className="px-3 pb-4">
           {!collapsed && (
-            <div className="mt-3">
-              <small className="text-xs text-muted-foreground">v0.1</small>
+            <div className="mt-3 flex items-center justify-between">
+              <div>
+                <small className="text-xs text-muted-foreground">v0.1</small>
+              </div>
+              <div>
+                <ModeToggle />
+              </div>
             </div>
           )}
         </div>
