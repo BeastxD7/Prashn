@@ -236,15 +236,19 @@ export const NavbarLogo = () => {
   return (
     <Link
       to="/"
-      className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
+      className="relative z-20 mr-4 flex items-center justify-center space-x-2 px-2 py-1 text-sm font-normal text-black"
     >
-      <img
-        src="https://assets.aceternity.com/logo-dark.png"
-        alt="logo"
-        width={30}
-        height={30}
-      />
-      <span className="font-medium text-black dark:text-white">Startup</span>
+      <div className="container mx-auto flex flex-wrap items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-2xl sm:text-3xl md:text-3xl lg:text-4xl bg-gradient-to-b from-green-500 to-green-900 bg-clip-text text-transparent leading-none">
+            प्रश्न |
+          </span>
+          <span className="font-bold text-2xl sm:text-3xl md:text-3xl lg:text-4xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-900 to-neutral-700 dark:from-neutral-600 dark:to-white tracking-tight leading-none">
+            Prashn
+          </span>
+        </div>
+      </div>
+          
     </Link>
   );
 };
