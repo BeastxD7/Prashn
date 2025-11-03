@@ -1,5 +1,3 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
-
 import {
   Sidebar,
   SidebarContent,
@@ -11,8 +9,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { navItems } from "@/constants/Navbar"
-
-
+import Link from "next/link"
 
 export function AppSidebar() {
   return (
@@ -25,10 +22,10 @@ export function AppSidebar() {
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

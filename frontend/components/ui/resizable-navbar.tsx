@@ -139,7 +139,7 @@ export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
               className="absolute inset-0 h-full w-full rounded-full bg-gray-100 dark:bg-neutral-800"
             />
           )}
-          <span className="relative z-20">{item.url}</span>
+          <span className="relative z-20">{item.title}</span>
         </Link>
       ))}
     </motion.div>
