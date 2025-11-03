@@ -5,6 +5,7 @@ import { CreateUserSchema } from "../zodSchemas/user";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
+import { generateToken, hashToken } from "../utils/token";
 
 dotenv.config();
 
@@ -20,9 +21,11 @@ export const createUser = async (req: Request, res: Response) => {
       
     }
 
-    const { firstName, lastName, username, email, password } = data;
+  const { firstName, lastName, username, email, password } = data;
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+  // Use configurable bcrypt salt rounds (default 12). Prefer >=12 for production.
+  const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     const newUser = await prisma.user.create({
       data: { firstName, lastName, username, email, password: hashedPassword },
@@ -46,7 +49,11 @@ export const createUser = async (req: Request, res: Response) => {
 
 export const loginUser = async (req: Request, res: Response) => {
   try {
-    const { username, password } = req.body;
+    // Basic input validation (use Zod for stricter validation if desired)
+    const { username, password } = req.body || {};
+    if (typeof username !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ status: false, message: 'Invalid credentials format' });
+    }
     const user = await prisma.user.findUnique({
       where: { username },
     });
@@ -60,21 +67,50 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(401).json({ status: false, message: "username or password is incorrect", error: 'Invalid password' });
     }
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '24h' });
+    // Short-lived access token: prefer small lifetime (e.g. 15 minutes). Make configurable in env.
+    const accessTokenExpirySeconds = parseInt(process.env.JWT_ACCESS_TOKEN_EXPIRES_SECONDS || '900', 10); // default 900s = 15m
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: `${accessTokenExpirySeconds}s` });
 
     const isProd = process.env.NODE_ENV === 'production';
 
-    // Set token as HttpOnly cookie. In production we use secure + sameSite none (for cross-site https).
-    // For local development (http) we must avoid secure:true so the browser will accept the cookie.
-    res.cookie('access_token', token, {
+    // Cookie options for access token. Keep HttpOnly to prevent JS access.
+    const accessCookieOptions = {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: accessTokenExpirySeconds * 1000,
+      path: '/',
+    } as const;
+
+    // Store the access token in an HttpOnly cookie. NOTE: because cookies are being used for auth,
+    // you must also protect against CSRF (double-submit cookie, CSRF tokens, or use SameSite strict where possible).
+    res.cookie('access_token', token, accessCookieOptions);
+
+    // Create a long-lived refresh token, store its hash in DB and set cookie
+    const refreshTokenExpirySeconds = parseInt(process.env.JWT_REFRESH_TOKEN_EXPIRES_SECONDS || `${14 * 24 * 60 * 60}`, 10); // default 14 days
+    const refreshToken = generateToken(64);
+    const refreshTokenHash = hashToken(refreshToken);
+
+    // Persist hashed refresh token
+    await (prisma as any).refreshToken.create({
+      data: {
+        tokenHash: refreshTokenHash,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + refreshTokenExpirySeconds * 1000),
+      },
+    });
+
+    // Set refresh token cookie (HttpOnly)
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      maxAge: refreshTokenExpirySeconds * 1000,
       path: '/',
     });
 
-    res.status(200).json({ status: true, message: 'Login successful', token });
+    // Don't echo the JWT back in the JSON response. This prevents accidental exposure in client-side logs.
+    res.status(200).json({ status: true, message: 'Login successful' });
   } catch (error) {
     console.log(error);
 
@@ -82,10 +118,68 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 };
 
-export const logoutUser = (_req: Request, res: Response) => {
+export const logoutUser = async (req: Request, res: Response) => {
+  // Clear authentication cookies on logout. Also revoke server-side refresh token if present.
   const isProd = process.env.NODE_ENV === 'production';
-  res.cookie('access_token', '', { maxAge: 0, httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax' });
+  const cookieOptions = { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax', path: '/' } as const;
+
+  const presentedRefresh = req.cookies?.refresh_token;
+  if (presentedRefresh && typeof presentedRefresh === 'string') {
+    try {
+      const presentedHash = hashToken(presentedRefresh);
+      // Mark this token revoked in DB (if it exists)
+      await (prisma as any).refreshToken.updateMany({ where: { tokenHash: presentedHash }, data: { revoked: true } });
+    } catch (e) {
+      // still clear cookies below
+      console.log('Failed to revoke refresh token on logout', e);
+    }
+  }
+
+  // Overwrite and expire the cookies
+  res.cookie('access_token', '', { ...cookieOptions, maxAge: 0 });
+  res.cookie('refresh_token', '', { ...cookieOptions, maxAge: 0 });
+
   res.json({ status: true, message: 'Logged out successfully' });
+};
+
+// Refresh access token using a refresh token stored in HttpOnly cookie.
+export const refreshAccessToken = async (req: Request, res: Response) => {
+  try {
+    const presented = req.cookies?.refresh_token;
+    if (!presented || typeof presented !== 'string') {
+      return res.status(401).json({ status: false, message: 'No refresh token provided' });
+    }
+
+    const presentedHash = hashToken(presented);
+    const stored = await (prisma as any).refreshToken.findUnique({ where: { tokenHash: presentedHash } });
+    if (!stored || stored.revoked || new Date(stored.expiresAt) < new Date()) {
+      // Possible token reuse/compromise: revoke all tokens for that user if we have the record
+      if (stored && stored.userId) {
+        await (prisma as any).refreshToken.updateMany({ where: { userId: stored.userId }, data: { revoked: true } });
+      }
+      return res.status(401).json({ status: false, message: 'Invalid or expired refresh token' });
+    }
+
+    // Rotate refresh token: replace stored tokenHash and expiry
+    const newRefreshToken = generateToken(64);
+    const newRefreshHash = hashToken(newRefreshToken);
+    const refreshTokenExpirySeconds = parseInt(process.env.JWT_REFRESH_TOKEN_EXPIRES_SECONDS || `${14 * 24 * 60 * 60}`, 10);
+
+    await (prisma as any).refreshToken.update({ where: { tokenHash: presentedHash }, data: { tokenHash: newRefreshHash, expiresAt: new Date(Date.now() + refreshTokenExpirySeconds * 1000) } });
+
+    // Issue new short-lived access token
+    const accessTokenExpirySeconds = parseInt(process.env.JWT_ACCESS_TOKEN_EXPIRES_SECONDS || '900', 10);
+    const newAccessToken = jwt.sign({ userId: stored.userId }, process.env.JWT_SECRET!, { expiresIn: `${accessTokenExpirySeconds}s` });
+
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookie('access_token', newAccessToken, { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax', maxAge: accessTokenExpirySeconds * 1000, path: '/' });
+    res.cookie('refresh_token', newRefreshToken, { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax', maxAge: refreshTokenExpirySeconds * 1000, path: '/' });
+
+    res.status(200).json({ status: true, message: 'Token refreshed' });
+  } catch (error) {
+    console.log('refreshAccessToken error', error);
+    res.status(500).json({ status: false, message: 'Failed to refresh token' });
+  }
 };
 
 // Get all users

@@ -11,7 +11,7 @@ const app = express()
 
 const PORT = process.env.PORT || 3002;
 // Allow the local frontend during development. Use an env var in production for security.
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173' || 'https://localhost:5173';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000' || 'https://localhost:5173';
 app.use(
     cors({
         origin: FRONTEND_URL,

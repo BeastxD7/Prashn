@@ -13,4 +13,5 @@ UserRouter.get('/:id', user_controller_1.getUserById);
 UserRouter.put('/:id', user_controller_1.updateUserById);
 UserRouter.delete('/:id', user_controller_1.deleteUserById);
 UserRouter.post('/logout', user_controller_1.logoutUser);
+UserRouter.post('/refresh', user_controller_1.refreshAccessToken);
 exports.default = UserRouter;

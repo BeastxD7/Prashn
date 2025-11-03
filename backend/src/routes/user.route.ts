@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createUser, deleteUserById, getAllUsers, getProfile, getUserById, getUserCredits, loginUser, logoutUser, updateUserById } from "../controllers/user.controller";
+import { createUser, deleteUserById, getAllUsers, getProfile, getUserById, getUserCredits, loginUser, logoutUser, updateUserById, refreshAccessToken } from "../controllers/user.controller";
 import { cookieAuth } from "../middleware/user.middleware";
 
 const UserRouter = Router();
@@ -14,5 +14,6 @@ UserRouter.get('/:id', getUserById);
 UserRouter.put('/:id', updateUserById);
 UserRouter.delete('/:id', deleteUserById);
 UserRouter.post('/logout', logoutUser);
+UserRouter.post('/refresh', refreshAccessToken);
 
 export default UserRouter;
