@@ -13,6 +13,9 @@ type AuthContextType = {
   refresh: () => Promise<void>
   logout: () => Promise<void>
   login?: (payload: any) => Promise<any>
+  register?: (payload: any) => Promise<any>
+  getCredits?: () => Promise<any>
+  refreshAccessToken?: () => Promise<any>
   setUser: (u: User | null) => void
 }
 
@@ -70,6 +73,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [router])
 
+  const register = useCallback(async (payload: any) => {
+    try {
+      const res = await api.user.register(payload)
+      // Optionally refresh the user after successful registration
+      try {
+        await refresh()
+      } catch (e) {
+        // ignore; registration succeeded even if fetching profile failed
+      }
+      return res
+    } catch (err) {
+      throw err
+    }
+  }, [refresh])
+
+  const refreshAccessToken = useCallback(async () => {
+    try {
+      const res = await api.user.refresh()
+      // After refresh, re-run refresh() to update user state
+      try {
+        await refresh()
+      } catch (_) {
+        // ignore
+      }
+      return res
+    } catch (err) {
+      throw err
+    }
+  }, [refresh])
+
+  const getCredits = useCallback(async () => {
+    try {
+      const res = await api.user.getCredits()
+      return res
+    } catch (err) {
+      throw err
+    }
+  }, [])
+
   const login = useCallback(
     async (payload: any) => {
       try {
@@ -92,7 +134,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   )
 
   return (
-    <AuthContext.Provider value={{ user, loading, refresh, logout, login, setUser }}>
+    <AuthContext.Provider value={{ user, loading, refresh, logout, login, register, getCredits, refreshAccessToken, setUser }}>
       {children}
     </AuthContext.Provider>
   )

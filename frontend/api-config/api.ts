@@ -30,6 +30,10 @@ export const api = {
       const res = await apiClient.get<ApiResponse<meResponse>>('users/me');
       return res;
     },
+    refresh: async (): Promise<AxiosResponse | null> => {
+      const res = await apiClient.post<ApiResponse<any>>('users/refresh');
+      return res;
+    },
     getCredits: async (): Promise<AxiosResponse | null> => {
       const res = await apiClient.get<ApiResponse<{ credits: number }>>('users/credits');
       return res;

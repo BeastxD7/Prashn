@@ -38,7 +38,6 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <NavbarDemo />
             {children}
             <Toaster />
           </AuthProvider>

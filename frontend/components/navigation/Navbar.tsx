@@ -12,13 +12,14 @@ import {
 } from "@/components/ui/resizable-navbar";
 import { navItems } from "@/constants/Navbar";
 import Link from "next/link";
+import  { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ModeToggle } from "../mode-toggle";
 
 
 
 export function NavbarDemo() {
 
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -28,8 +29,7 @@ export function NavbarDemo() {
         <NavBody>
           <NavbarLogo />
           <NavItems items={navItems} />
-          <div className="flex items-center gap-4 z-10">
-            <ModeToggle />
+          <div className="flex items-center gap-4">
             <NavbarButton as={Link} variant="primary" href="/login">Login</NavbarButton>
           </div>
         </NavBody>

@@ -2,11 +2,9 @@
 
 import Link from "next/link"
 import LoginForm from "./LoginForm"
-import useAuth from "@/context/auth-provider"
 export default function LoginPage() {
 
-  const {user} = useAuth()
-  console.log(user)  
+
   return (
     <div className="w-full h-[90vh] flex items-center justify-center px-4 py-12">
           <div className="flex items-center justify-center">

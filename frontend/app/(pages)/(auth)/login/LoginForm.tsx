@@ -8,8 +8,6 @@ import { toast } from "sonner"
 
 import { LoginSchema, type LoginSchemaType } from "@/zod/loginForm"
 import { api } from "@/api-config/api"
-import useAuth from "@/context/auth-provider"
-import { useEffect } from "react"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -28,43 +26,17 @@ export default function LoginForm() {
     resolver: zodResolver(LoginSchema),
     defaultValues: { username: "", password: "" },
   })
-  const { login, user } = useAuth()
 
-  useEffect(() => {
-    if (user) {
-      // If a user is present (already authenticated), navigate away from login
-      try {
-        router.push("/dashboard")
-      } catch (_) {
-        if (typeof window !== "undefined") window.location.href = "/dashboard"
-      }
-    }
-  }, [user, router])
+
 
   async function onSubmit(data: LoginSchemaType) {
     setIsSubmitting(true)
     try {
-      // prefer the auth provider's login so global state is updated
-      if (login) {
-        const res = await login(data as any)
-        const ok = !!(res && ((res as any).data?.success || (res as any).data?.status || (res as any).data?.data?.status))
-        const msg = (res && ((res as any).data?.message || (res as any).data?.data?.message)) || undefined
-        if (ok) {
-          toast.success(msg || "Logged in successfully")
-          // navigation will happen in useEffect when `user` becomes truthy
-        } else {
-          toast.error(msg || "Login failed")
-        }
-      } else {
-        // fallback to direct api call
+      {
         const res = await api.user.login(data as any)
         if (res && (res.data?.success || res.data?.status || res.data?.data?.status)) {
           toast.success(res.data.message || "Logged in successfully")
-          try {
             router.push("/dashboard")
-          } catch (_) {
-            if (typeof window !== "undefined") window.location.href = "/dashboard"
-          }
         } else {
           toast.error(res?.data?.message || "Login failed")
         }
