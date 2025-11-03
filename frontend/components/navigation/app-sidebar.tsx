@@ -4,12 +4,14 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarFooter,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { navItems } from "@/constants/Navbar"
 import Link from "next/link"
+import { ModeToggle } from "@/components/mode-toggle"
 
 export function AppSidebar() {
   return (
@@ -32,6 +34,11 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        <SidebarFooter className="mt-auto">
+          <div className="w-full flex items-center justify-center px-2 py-3 group-data-[collapsible=icon]:justify-center">
+            <ModeToggle />
+          </div>
+        </SidebarFooter>
       </SidebarContent>
     </Sidebar>
   )
