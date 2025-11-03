@@ -50,6 +50,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [])
 
+
+
+  
+
+  // Periodically or on focus/visibility, attempt a silent refresh so users don't get logged out
+  // immediately when the access cookie expires. Throttle calls to avoid spamming the server.
+  const lastRefreshRef = React.useRef<number>(0)
+  useEffect(() => {
+    const trySilentRefresh = async () => {
+      try {
+        const now = Date.now()
+        if (now - lastRefreshRef.current < 30_000) return // 30s throttle
+        lastRefreshRef.current = now
+
+        // Call the refresh endpoint; if it succeeds, update the user state via refresh()
+        await api.user.refresh()
+        await refresh()
+      } catch (e) {
+        // ignore errors (will be handled by interceptor / user can re-login)
+      }
+    }
+
+    const onFocus = () => {
+      trySilentRefresh()
+    }
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") trySilentRefresh()
+    }
+
+    window.addEventListener("focus", onFocus)
+    document.addEventListener("visibilitychange", onVisibility)
+
+    return () => {
+      window.removeEventListener("focus", onFocus)
+      document.removeEventListener("visibilitychange", onVisibility)
+    }
+  }, [refresh])
+
   useEffect(() => {
     // fetch current user on mount
     refresh()
