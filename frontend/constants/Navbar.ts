@@ -1,9 +1,10 @@
+import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
 
 export const navItems = [
 
     {
-        name: "Dashboard",
-        link: "/dashboard",
-    },
-    
+        title: "Dashboard",
+        url: "/dashboard",
+        icon: Home,
+    }
 ];

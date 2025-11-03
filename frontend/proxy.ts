@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isProtectedPath } from './constants/routes';
 
 // Middleware runs on the Edge runtime. Keep logic minimal and synchronous.
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
   // Ignore public assets and API routes early

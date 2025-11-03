@@ -6,6 +6,7 @@ import { NavbarDemo } from "@/components/navigation/Navbar"
 import { Toaster } from "@/components/ui/sonner"
 import { AuthProvider } from "@/context/auth-provider"
 
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -37,10 +38,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
+              <AuthProvider>
+              {children}
+              <Toaster />
+            </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
