@@ -90,7 +90,10 @@ export default function GeneratedQuizPage() {
     if (!id && !data) {
       // no id and no state — redirect back to generator
       const t = setTimeout(() => router.push('/generate-by-text'), 500)
-      return () => clearTimeout(t)
+      return () => {
+        clearTimeout(t)
+        mounted = false
+      }
     }
     return () => { mounted = false }
   }, [data, params])
@@ -262,7 +265,7 @@ export default function GeneratedQuizPage() {
           <h2 className="text-lg font-semibold">Login to View this Quiz</h2>
           <p className="text-sm text-muted-foreground">{authRequiredMessage}</p>
           <div className="flex items-center justify-center gap-3">
-            <Link href="/auth/login">
+            <Link href="/login">
               <Button>Sign in</Button>
             </Link>
             <Link href="/auth/register">
@@ -324,11 +327,11 @@ export default function GeneratedQuizPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-background/85">
+    <div className="min-h-screen w-full bg-linear-to-br from-background via-background/95 to-background/85">
       <div className="mx-auto w-full max-w-4xl px-4 py-12">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-400 text-transparent">{quiz.title}</h1>
+            <h1 className="text-2xl font-semibold bg-clip-text bg-linear-to-r from-indigo-600 to-cyan-400 text-transparent">{quiz.title}</h1>
             <p className="text-sm text-muted-foreground mt-1">{quiz.description}</p>
           </div>
           <div>
@@ -347,7 +350,7 @@ export default function GeneratedQuizPage() {
 
         <div className="space-y-6">
           {isOwner ? (
-            <div className="mb-4 rounded-2xl border border-border/60 bg-gradient-to-br from-white/5 to-background/60 p-4">
+            <div className="mb-4 rounded-2xl border border-border/60 bg-linear-to-br from-white/5 to-background/60 p-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
@@ -384,7 +387,7 @@ export default function GeneratedQuizPage() {
               </div>
 
               {editableQuestions.map((q: any, idx: number) => (
-                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-gradient-to-br from-white/5 to-background/60 p-4 space-y-3 shadow-sm">
+                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-linear-to-br from-white/5 to-background/60 p-4 space-y-3 shadow-sm">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="text-xs text-muted-foreground">Question {idx + 1}</div>
@@ -441,7 +444,7 @@ export default function GeneratedQuizPage() {
           ) : (
             <div className="space-y-4">
               {questions.map((q: any, idx: number) => (
-                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-gradient-to-br from-white/2 to-background/60 p-4 shadow-sm">
+                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-linear-to-br from-white/2 to-background/60 p-4 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">Question {idx + 1}</div>
                     <div className="flex items-center gap-2">

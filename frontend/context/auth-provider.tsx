@@ -105,9 +105,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null)
       toast.success("Logged out")
       try {
-        router.push("/auth/login")
+        router.push("/login")
       } catch (_) {
-        if (typeof window !== "undefined") window.location.href = "/auth/login"
+        if (typeof window !== "undefined") window.location.href = "/login"
       }
     }
   }, [router])

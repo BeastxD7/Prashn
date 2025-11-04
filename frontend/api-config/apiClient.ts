@@ -69,9 +69,22 @@ apiClient.interceptors.response.use(
     } catch (err) {
       isRefreshing = false;
       processQueue(err);
-      // If refresh failed, redirect to login so user can re-authenticate
+      // If refresh failed, redirect to login so user can re-authenticate.
+      // Guard: if we're already on the login page, avoid forcing a navigation reload
+      // (this prevents a redirect/reload loop when `me` or `refresh` keep returning 401).
       if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login';
+        try {
+          const currentPath = window.location.pathname || '/'
+          if (currentPath !== '/login') {
+            window.location.href = '/login'
+          } else {
+            // already on login page — do not reload
+            console.debug('[apiClient] refresh failed while on /login — skipping redirect')
+          }
+        } catch (e) {
+          // fallback
+          window.location.href = '/login'
+        }
       }
       return Promise.reject(err);
     }

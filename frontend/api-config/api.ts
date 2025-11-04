@@ -37,7 +37,11 @@ export const api = {
     getCredits: async (): Promise<AxiosResponse | null> => {
       const res = await apiClient.get<ApiResponse<{ credits: number }>>('users/credits');
       return res;
-    }
+    },
+    purchaseCredits: async (payload: { packageId: string }): Promise<AxiosResponse | null> => {
+      const res = await apiClient.post<ApiResponse<any>>('users/purchase-credits', payload);
+      return res;
+    },
   },
   dashboard: {
     getData: async (): Promise<AxiosResponse | null> => {
