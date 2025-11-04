@@ -6,6 +6,7 @@ import QuizRouter from './routes/quiz.route'
 import AgentRouter from './routes/agent.route'
 import cors from 'cors';
 import DashboardRouter from './routes/dashboard.route'
+import PaymentRouter from './routes/payments.route'
 
 const app = express()
 
@@ -35,6 +36,8 @@ app.use("/api/users", UserRouter)
 app.use("/api/quiz", QuizRouter)
 app.use("/api/agent", AgentRouter);
 app.use("/api/dashboard", DashboardRouter);
+app.use("/api/payment", PaymentRouter);
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`)

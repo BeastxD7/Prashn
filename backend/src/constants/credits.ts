@@ -92,3 +92,49 @@ export const creditRules: Record<featureName, CreditRule> = features.reduce(
     (acc, f) => ({ ...acc, [f.id]: f.rule }),
     {} as Record<string, CreditRule>
 ) as Record<featureName, CreditRule>;
+
+
+export const CREDIT_PACKAGES = [
+  {
+    id: "basic",
+    name: "Basic",
+    credits: 10,
+    price: 1,
+    popular: false,
+    accent: "from-sky-500/20 to-indigo-500/10",
+    buttonVariant: "outline" as const,
+    features: [
+      "10 credits",
+      "Generate up to 5 quizzes",
+      "All question types",
+    ],
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    credits: 50,
+    price: 999,
+    popular: true,
+    accent: "from-blue-500/25 to-cyan-500/15",
+    buttonVariant: "default" as const,
+    features: [
+      "50 credits",
+      "Generate up to 25 quizzes",
+      "Priority generation",
+    ],
+  },
+  {
+    id: "ultimate",
+    name: "Ultimate",
+    credits: 150,
+    price: 1999,
+    popular: false,
+    accent: "from-emerald-500/25 to-teal-500/10",
+    buttonVariant: "outline" as const,
+    features: [
+      "150 credits",
+      "Unlimited quiz generation",
+      "Premium support",
+    ],
+  },
+]

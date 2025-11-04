@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.creditRules = exports.features = void 0;
+exports.CREDIT_PACKAGES = exports.creditRules = exports.features = void 0;
 exports.features = [
     {
         id: 'generateQuizByText',
@@ -61,3 +61,47 @@ exports.features = [
 ];
 // Compatibility helper: expose a 'creditRules' view that returns the old shape (Record<featureName, CreditRule>)
 exports.creditRules = exports.features.reduce((acc, f) => (Object.assign(Object.assign({}, acc), { [f.id]: f.rule })), {});
+exports.CREDIT_PACKAGES = [
+    {
+        id: "basic",
+        name: "Basic",
+        credits: 10,
+        price: 1,
+        popular: false,
+        accent: "from-sky-500/20 to-indigo-500/10",
+        buttonVariant: "outline",
+        features: [
+            "10 credits",
+            "Generate up to 5 quizzes",
+            "All question types",
+        ],
+    },
+    {
+        id: "pro",
+        name: "Pro",
+        credits: 50,
+        price: 999,
+        popular: true,
+        accent: "from-blue-500/25 to-cyan-500/15",
+        buttonVariant: "default",
+        features: [
+            "50 credits",
+            "Generate up to 25 quizzes",
+            "Priority generation",
+        ],
+    },
+    {
+        id: "ultimate",
+        name: "Ultimate",
+        credits: 150,
+        price: 1999,
+        popular: false,
+        accent: "from-emerald-500/25 to-teal-500/10",
+        buttonVariant: "outline",
+        features: [
+            "150 credits",
+            "Unlimited quiz generation",
+            "Premium support",
+        ],
+    },
+];

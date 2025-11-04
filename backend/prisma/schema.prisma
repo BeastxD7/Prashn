@@ -25,6 +25,7 @@ model User {
   credits   Int       @default(5)
   quizzes   Quiz[]
   refreshTokens RefreshToken[]
+  payments  Payment[]
 }
 
 model Quiz {
@@ -83,3 +84,22 @@ model RefreshToken {
   revoked    Boolean  @default(false)
   createdAt  DateTime @default(now())
 }
+
+model Payment {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  orderId    String
+  paymentId  String   @unique
+  receipt    String?
+  amount     Float
+  currency   String
+  plan       String
+  status     String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([orderId])
+}
+
