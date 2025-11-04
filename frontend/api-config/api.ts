@@ -37,11 +37,7 @@ export const api = {
     getCredits: async (): Promise<AxiosResponse | null> => {
       const res = await apiClient.get<ApiResponse<{ credits: number }>>('users/credits');
       return res;
-    },
-    purchaseCredits: async (payload: { packageId: string }): Promise<AxiosResponse | null> => {
-      const res = await apiClient.post<ApiResponse<any>>('users/purchase-credits', payload);
-      return res;
-    },
+    }
   },
   dashboard: {
     getData: async (): Promise<AxiosResponse | null> => {
@@ -121,4 +117,20 @@ export const api = {
       return res
     },
   },
+  payment: {
+    createOrder: async (payload: { plan: string }): Promise<AxiosResponse | null> => {
+      const res = await apiClient.post<ApiResponse<any>>('payment/create-order', payload);
+      return res;
+    }
+    ,
+    verifyPayment: async (payload: { order_id: string; payment_id: string; signature: string }): Promise<AxiosResponse | null> => {
+      const res = await apiClient.post<ApiResponse<any>>('payment/verify-payment', payload);
+      return res;
+    }
+    ,
+    getPlans: async (): Promise<AxiosResponse | null> => {
+      const res = await apiClient.get<ApiResponse<any>>('payment/plan-details');
+      return res;
+    }
+  }
 };
