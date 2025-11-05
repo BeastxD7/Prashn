@@ -80,7 +80,7 @@ const generateQuizByText = async (req, res) => {
         const requiredCredits = (0, creditsUtil_1.getRequiredCreditsForQuestions)("generateQuizByText", numOfQuestions);
         const hasEnoughCredits = await (0, creditsUtil_1.checkAndDeductCredits)(userId, requiredCredits);
         if (!hasEnoughCredits) {
-            return res.status(402).json({ message: "Insufficient credits to generate quiz.", requiredCredits });
+            return res.status(402).json({ status: false, message: "Insufficient credits to generate quiz.", requiredCredits });
         }
         if (content.length < numOfQuestions * 100) {
             // Heuristic: Require at least ~100 chars per question
@@ -420,7 +420,7 @@ exports.generateQuizByPdf = [
             const requiredCredits = (0, creditsUtil_1.getRequiredCreditsForQuestions)("generateQuizByPdf", sanitizedQuestions);
             const hasEnoughCredits = await (0, creditsUtil_1.checkAndDeductCredits)(userId, requiredCredits);
             if (!hasEnoughCredits) {
-                return res.status(402).json({ error: "Insufficient credits to generate quiz.", requiredCredits });
+                return res.status(402).json({ status: false, message: "Insufficient credits to generate quiz.", requiredCredits });
             }
             const pdfData = await (0, pdf_parse_1.default)(req.file.buffer);
             const content = pdfData.text;
@@ -548,7 +548,7 @@ const generateQuizByYoutube = async (req, res) => {
         const requiredCredits = (0, creditsUtil_1.getRequiredCreditsForQuestions)("generateQuizByYoutube", sanitizedQuestions);
         const hasEnoughCredits = await (0, creditsUtil_1.checkAndDeductCredits)(userId, requiredCredits);
         if (!hasEnoughCredits) {
-            return res.status(402).json({ message: "Insufficient credits to generate quiz." });
+            return res.status(402).json({ status: false, message: "Insufficient credits to generate quiz." });
         }
         // Step 1: Get transcript text
         const transcriptText = await (0, youtube_transcript_1.getTranscriptText)(youtubeUrl, lang);
@@ -680,7 +680,7 @@ const generateQuizByAudio = async (req, res) => {
             const requiredCredits = (0, creditsUtil_1.getRequiredCreditsForQuestions)("generateQuizByAudio", sanitizedQuestions);
             const hasEnoughCredits = await (0, creditsUtil_1.checkAndDeductCredits)(userId, requiredCredits);
             if (!hasEnoughCredits) {
-                return res.status(402).json({ error: "Insufficient credits to generate quiz." });
+                return res.status(402).json({ status: false, message: "Insufficient credits to generate quiz." });
             }
             const transcriptText = await (0, whisper_1.transcribe)(req.file.buffer);
             if (!transcriptText) {

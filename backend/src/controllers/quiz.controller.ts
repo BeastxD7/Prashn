@@ -84,7 +84,7 @@ export const generateQuizByText = async (req: Request, res: Response) => {
     const hasEnoughCredits = await checkAndDeductCredits(userId, requiredCredits);
 
     if (!hasEnoughCredits) {
-      return res.status(402).json({ message: "Insufficient credits to generate quiz.", requiredCredits });
+      return res.status(402).json({ status:false , message: "Insufficient credits to generate quiz.", requiredCredits });
     }
 
     if (content.length < numOfQuestions * 100) {
@@ -480,7 +480,7 @@ export const generateQuizByPdf = [
       const hasEnoughCredits = await checkAndDeductCredits(userId, requiredCredits);
 
       if (!hasEnoughCredits) {
-        return res.status(402).json({ error: "Insufficient credits to generate quiz." , requiredCredits });
+        return res.status(402).json({ status:false, message: "Insufficient credits to generate quiz." , requiredCredits });
       }
 
       const pdfData = await pdfParse(req.file.buffer);
@@ -638,7 +638,7 @@ export const generateQuizByYoutube = async (req: Request, res: Response) => {
     const hasEnoughCredits = await checkAndDeductCredits(userId, requiredCredits);
 
     if (!hasEnoughCredits) {
-      return res.status(402).json({ message: "Insufficient credits to generate quiz." });
+      return res.status(402).json({ status:false, message: "Insufficient credits to generate quiz." });
     }
 
     // Step 1: Get transcript text
@@ -800,7 +800,7 @@ export const generateQuizByAudio = async (req: Request, res: Response) => {
 
       const hasEnoughCredits = await checkAndDeductCredits(userId, requiredCredits);
       if (!hasEnoughCredits) {
-        return res.status(402).json({ error: "Insufficient credits to generate quiz." });
+        return res.status(402).json({ status:false, message: "Insufficient credits to generate quiz." });
       }
 
 

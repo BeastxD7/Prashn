@@ -77,6 +77,7 @@ export const loginUser = async (req: Request, res: Response) => {
     const accessCookieOptions = {
       httpOnly: true,
       secure: isProd,
+      domain: isProd ? process.env.COOKIE_DOMAIN : undefined,
       sameSite: isProd ? 'none' : 'lax',
       maxAge: accessTokenExpirySeconds * 1000,
       path: '/',
@@ -104,6 +105,7 @@ export const loginUser = async (req: Request, res: Response) => {
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: isProd,
+      domain: isProd ? process.env.COOKIE_DOMAIN : undefined,
       sameSite: isProd ? 'none' : 'lax',
       maxAge: refreshTokenExpirySeconds * 1000,
       path: '/',
@@ -121,7 +123,7 @@ export const loginUser = async (req: Request, res: Response) => {
 export const logoutUser = async (req: Request, res: Response) => {
   // Clear authentication cookies on logout. Also revoke server-side refresh token if present.
   const isProd = process.env.NODE_ENV === 'production';
-  const cookieOptions = { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax', path: '/' } as const;
+  const cookieOptions = { httpOnly: true, secure: isProd, domain: isProd ? process.env.COOKIE_DOMAIN : undefined, sameSite: isProd ? 'none' : 'lax', path: '/' } as const;
 
   const presentedRefresh = req.cookies?.refresh_token;
   if (presentedRefresh && typeof presentedRefresh === 'string') {
@@ -172,8 +174,8 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
     const newAccessToken = jwt.sign({ userId: stored.userId }, process.env.JWT_SECRET!, { expiresIn: `${accessTokenExpirySeconds}s` });
 
     const isProd = process.env.NODE_ENV === 'production';
-    res.cookie('access_token', newAccessToken, { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax', maxAge: accessTokenExpirySeconds * 1000, path: '/' });
-    res.cookie('refresh_token', newRefreshToken, { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax', maxAge: refreshTokenExpirySeconds * 1000, path: '/' });
+    res.cookie('access_token', newAccessToken, { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax', domain: isProd ? process.env.COOKIE_DOMAIN : undefined, maxAge: accessTokenExpirySeconds * 1000, path: '/' });
+    res.cookie('refresh_token', newRefreshToken, { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax', domain: isProd ? process.env.COOKIE_DOMAIN : undefined, maxAge: refreshTokenExpirySeconds * 1000, path: '/' });
 
     res.status(200).json({ status: true, message: 'Token refreshed' });
   } catch (error) {
