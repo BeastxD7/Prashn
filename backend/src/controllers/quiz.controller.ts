@@ -35,7 +35,7 @@ const upload = multer({
 });
 
 const audioUpload = multer({
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/mp4', 'video/mp4'];
     if (!allowedTypes.includes(file.mimetype)) {
@@ -90,7 +90,8 @@ export const generateQuizByText = async (req: Request, res: Response) => {
     if (content.length < numOfQuestions * 100) {
       // Heuristic: Require at least ~100 chars per question
       return res.status(400).json({
-        error: `Insufficient content length for ${numOfQuestions} questions. Please provide more detailed content or request fewer questions.`,
+        status:false,
+        message: `Insufficient content length for ${numOfQuestions} questions. Please provide more detailed content or request fewer questions.`,
       });
     }
 

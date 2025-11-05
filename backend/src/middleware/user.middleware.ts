@@ -59,7 +59,7 @@ export const cookieAuth = (req: Request, res: Response, next: NextFunction) => {
   }
 
   if (!token) {
-    return res.status(401).json({ status: false, message: 'No token, authorization denied' });
+    return res.status(401).json({ status: false, message: 'Please Login First to Continue!' });
   }
 
   try {

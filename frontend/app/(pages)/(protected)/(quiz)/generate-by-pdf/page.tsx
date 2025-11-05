@@ -1,13 +1,17 @@
 "use client"
-import { useState, useEffect } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Upload, Loader2 } from "lucide-react"
-import { toast } from "sonner"
-import type { QuestionType } from "@/api-config/types"
-import { api } from "@/api-config/api"
+
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { Loader2, Upload } from "lucide-react"
+import { toast } from "sonner"
+
+import { QuestionType } from "@/api-config/types"
+import { api } from "@/api-config/api"
+import { useAuth } from "@/context/auth-provider"
+import { AuthPrompt } from "@/components/auth/AuthPrompt"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 const QUESTION_TYPES = ["MCQ", "True / False", "Short Answer", "Fill in the Blank"] as const
 const QUESTION_TYPE_VALUE_MAP: Record<(typeof QUESTION_TYPES)[number], QuestionType> = {
@@ -41,6 +45,8 @@ const GenerateQuizByPdf = () => {
   const [difficulty, setDifficulty] = useState("Medium")
   const [userCredits, setUserCredits] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
+  const [authPromptOpen, setAuthPromptOpen] = useState(false)
+  const { user } = useAuth()
 
   useEffect(() => {
     // Fetch user credits when component mounts
@@ -73,6 +79,11 @@ const GenerateQuizByPdf = () => {
   }
 
   const handleGenerateQuiz = async () => {
+    if (!user) {
+      setAuthPromptOpen(true)
+      return
+    }
+
     if (!pdfFile) {
       toast.error("Please upload a PDF file before generating the quiz.")
       return
@@ -153,6 +164,7 @@ const GenerateQuizByPdf = () => {
 
   return (
     <div className="min-h-screen w-full bg-linear-to-br from-background via-background/95 to-background/85">
+      <AuthPrompt open={authPromptOpen} onOpenChange={setAuthPromptOpen} />
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-3">

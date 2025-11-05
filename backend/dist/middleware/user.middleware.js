@@ -49,7 +49,7 @@ const cookieAuth = (req, res, next) => {
         }
     }
     if (!token) {
-        return res.status(401).json({ status: false, message: 'No token, authorization denied' });
+        return res.status(401).json({ status: false, message: 'Please Login First to Continue!' });
     }
     try {
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);

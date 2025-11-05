@@ -1,13 +1,21 @@
 "use client"
+
 import { useEffect, useState } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
+
+import {
+  DifficultyLevel,
+  GenerateQuizByTextPayload,
+  QuestionType,
+} from "@/api-config/types"
 import { api } from "@/api-config/api"
-import { useRouter } from "next/navigation"
-import type { DifficultyLevel, GenerateQuizByTextPayload, QuestionType } from "@/api-config/types"
+import { useAuth } from "@/context/auth-provider"
+import { AuthPrompt } from "@/components/auth/AuthPrompt"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 const QUESTION_TYPES = ["MCQ", "True / False", "Short Answer", "Fill in the Blank"] as const
 const QUESTION_TYPE_VALUE_MAP: Record<(typeof QUESTION_TYPES)[number], QuestionType> = {
@@ -36,11 +44,18 @@ const GenerateQuizByText = () => {
   const [loading, setLoading] = useState(false)
   // result is intentionally not stored inline; we navigate to a dedicated results route
   const [userCredits, setUserCredits] = useState<number | null>(null)
+  const [authPromptOpen, setAuthPromptOpen] = useState(false)
+  const { user } = useAuth()
   const router = useRouter()
 
   const credits = calculateCredits(questionCount)
 
   const handleGenerate = async () => {
+    if (!user) {
+      setAuthPromptOpen(true)
+      return
+    }
+
     const trimmedTitle = quizName?.trim()
     if (!trimmedTitle || trimmedTitle.length < 5) {
       toast.error("Title must be at least 5 characters.")
@@ -150,7 +165,8 @@ const GenerateQuizByText = () => {
   }, [])
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-background/85">
+    <div className="min-h-screen w-full bg-linear-to-br from-background via-background/95 to-background/85">
+      <AuthPrompt open={authPromptOpen} onOpenChange={setAuthPromptOpen} />
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-3">
@@ -270,7 +286,7 @@ const GenerateQuizByText = () => {
           </div>
 
           <div className="space-y-8">
-            <div className="rounded-3xl bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 p-6 text-white shadow-lg dark:from-blue-600 dark:via-cyan-600 dark:to-teal-600">
+            <div className="rounded-3xl bg-linear-to-br from-blue-500 via-cyan-500 to-teal-500 p-6 text-white shadow-lg dark:from-blue-600 dark:via-cyan-600 dark:to-teal-600">
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4">
                   <div>
@@ -291,55 +307,60 @@ const GenerateQuizByText = () => {
             <div className="rounded-3xl border border-border/60 bg-background/65 p-6 backdrop-blur">
               <h3 className="text-base font-semibold text-foreground">Quick settings</h3>
               <div className="mt-5">
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Number of questions</label>
-                    <Input
-                      type="number"
-                      min={3}
-                      max={30}
-                      value={questionCount}
-                      onChange={(e) => {
-                        const value = Number(e.target.value)
-                        if (Number.isNaN(value)) {
-                          setQuestionCount(3)
-                          return
-                        }
-                        setQuestionCount(Math.max(3, Math.min(30, Math.round(value))))
-                      }}
-                      className="bg-background/60 w-20 text-center rounded-lg"
-                    />
-                  </div>
+                {/* Number of Questions */}
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="question-count"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Number of questions
+                  </label>
+                  <Input
+                    id="question-count"
+                    type="number"
+                    min={3}
+                    max={30}
+                    value={questionCount}
+                    onChange={(e) =>
+                      setQuestionCount(Math.max(3, Math.min(30, Number(e.target.value))))
+                    }
+                    className="w-20 rounded-lg bg-background/60 text-center"
+                  />
+                </div>
 
-                  <div className="flex-1">
-                    <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Difficulty</label>
-                    <div className="mt-2 flex gap-2">
-                      {DIFFICULTY_LEVELS.map((level) => {
-                        const active = difficulty === level
-                        return (
-                          <button key={level} type="button" onClick={() => setDifficulty(level)} className="rounded-full">
-                            <Badge variant={active ? "default" : "outline"} className="px-3 py-1">
-                              {level}
-                            </Badge>
-                          </button>
-                        )
-                      })}
-                    </div>
+                {/* Difficulty */}
+                <div className="mt-4">
+                  <label className="text-sm font-medium text-foreground">Difficulty</label>
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {DIFFICULTY_LEVELS.map((level) => {
+                      const active = difficulty === level
+                      return (
+                        <button
+                          key={level}
+                          type="button"
+                          onClick={() => setDifficulty(level)}
+                          className="rounded-full"
+                        >
+                          <Badge variant={active ? "default" : "outline"} className="w-full">
+                            {level}
+                          </Badge>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
 
               <button
-                type="button"
                 onClick={handleGenerate}
                 disabled={loading}
-                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:shadow-xl hover:from-blue-600 hover:via-cyan-600 hover:to-teal-600 disabled:cursor-not-allowed disabled:opacity-80 dark:from-blue-600 dark:via-cyan-600 dark:to-teal-600 dark:hover:from-blue-700 dark:hover:via-cyan-700 dark:hover:to-teal-700"
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-blue-500 via-cyan-500 to-teal-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
-                  <>
+                  <span className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Generating...
-                  </>
+                  </span>
                 ) : (
                   "Generate Quiz"
                 )}
@@ -347,7 +368,7 @@ const GenerateQuizByText = () => {
             </div>
 
             
-            {/* Results are shown on the dedicated /generate route instead of inline */}
+            {/* <Toaster /> */}
           </div>
         </div>
       </div>
