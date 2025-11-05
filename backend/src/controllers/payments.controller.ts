@@ -8,6 +8,10 @@ dotenv.config();
 
 export const createOrder = async (req: Request, res: Response) => {
     try {
+
+    const offerIds = process.env.RAZORPAY_OFFER_IDS
+  ? process.env.RAZORPAY_OFFER_IDS.split(",").map(id => id.trim())
+  : [];
         const plan = req.body.plan;
 
         const selectedPackage = CREDIT_PACKAGES.find(p => p.id === plan);
@@ -20,7 +24,8 @@ export const createOrder = async (req: Request, res: Response) => {
             amount: selectedPackage.price * 100, // amount in the smallest currency unit
             currency: "INR",
             receipt: crypto.randomBytes(10).toString('hex'),
-            notes: { plan: selectedPackage.id }
+            notes: { plan: selectedPackage.id },
+            offers: offerIds.length > 0 ? offerIds : undefined,
         };
 
         const order = await razorpay.orders.create(options, (err, order) => {
