@@ -10,20 +10,32 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader,
 } from "@/components/ui/sidebar"
 import { navItems } from "@/constants/Navbar"
 import Link from "next/link"
 import { ModeToggle } from "@/components/mode-toggle"
 import { useAuth } from "@/context/auth-provider"
 import { Button } from "@/components/ui/button"
-import { LogOut } from "lucide-react"
+import { LogOut, Sparkles } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 export function AppSidebar() {
   const { logout, user } = useAuth()
 
   return (
-    <Sidebar  collapsible="icon">
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <div className="flex items-center gap-2 px-2 py-4 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+          <div className="flex items-center justify-center size-10 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 shrink-0">
+            <Sparkles className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
+            <span className="font-bold text-lg truncate">Prashn</span>
+            <span className="text-xs text-muted-foreground truncate">AI Quiz Generator</span>
+          </div>
+        </div>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Prashn</SidebarGroupLabel>

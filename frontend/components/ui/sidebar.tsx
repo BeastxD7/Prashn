@@ -138,8 +138,9 @@ function SidebarProvider({
               ...style,
             } as React.CSSProperties
           }
+          // Make wrapper positioned so floating trigger can be absolutely positioned
           className={cn(
-            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
+            "relative group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
             className
           )}
           {...props}

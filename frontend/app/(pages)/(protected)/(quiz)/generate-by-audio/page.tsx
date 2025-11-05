@@ -224,7 +224,7 @@ export default function GenerateQuizByAudio() {
           </div>
 
           <div className="space-y-8">
-            <div className="rounded-3xl bg-linear-to-br from-blue-500 via-cyan-500 to-teal-500 p-6 text-white shadow-lg">
+            <div className="hidden sm:block rounded-3xl bg-linear-to-br from-blue-500 via-cyan-500 to-teal-500 p-6 text-white shadow-lg">
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4">
                   <div>
