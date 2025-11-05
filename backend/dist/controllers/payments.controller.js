@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPlanDetails = exports.verifyPayment = exports.createOrder = void 0;
+exports.getPaymentDetails = exports.getPaymentHistory = exports.getPlanDetails = exports.verifyPayment = exports.createOrder = void 0;
 const crypto_1 = __importDefault(require("crypto"));
 const razorpay_1 = require("../utils/razorpay");
 const credits_1 = require("../constants/credits");
@@ -131,3 +131,102 @@ const getPlanDetails = async (req, res) => {
     }
 };
 exports.getPlanDetails = getPlanDetails;
+const getPaymentHistory = async (req, res) => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({ status: false, message: "Unauthorized" });
+        }
+        const payments = await prisma_1.default.payment.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                orderId: true,
+                paymentId: true,
+                receipt: true,
+                amount: true,
+                currency: true,
+                plan: true,
+                status: true,
+                createdAt: true,
+            }
+        });
+        // Enrich payment data with plan details
+        const enrichedPayments = payments.map(payment => {
+            const planDetails = credits_1.CREDIT_PACKAGES.find(p => p.id === payment.plan);
+            return Object.assign(Object.assign({}, payment), { planName: (planDetails === null || planDetails === void 0 ? void 0 : planDetails.name) || 'Unknown Plan', creditsReceived: (planDetails === null || planDetails === void 0 ? void 0 : planDetails.credits) || 0 });
+        });
+        return res.status(200).json({
+            status: true,
+            payments: enrichedPayments,
+            total: payments.length
+        });
+    }
+    catch (error) {
+        console.error("getPaymentHistory error:", error);
+        return res.status(500).json({ status: false, message: "Internal server error" });
+    }
+};
+exports.getPaymentHistory = getPaymentHistory;
+const getPaymentDetails = async (req, res) => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({ status: false, message: "Unauthorized" });
+        }
+        const { paymentId } = req.params;
+        if (!paymentId) {
+            return res.status(400).json({ status: false, message: "Payment ID is required" });
+        }
+        const payment = await prisma_1.default.payment.findUnique({
+            where: { paymentId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                    }
+                }
+            }
+        });
+        if (!payment) {
+            return res.status(404).json({ status: false, message: "Payment not found" });
+        }
+        // Verify that the payment belongs to the requesting user
+        if (payment.userId !== userId) {
+            return res.status(403).json({ status: false, message: "Access denied" });
+        }
+        // Get plan details
+        const planDetails = credits_1.CREDIT_PACKAGES.find(p => p.id === payment.plan);
+        const detailedPayment = {
+            id: payment.id,
+            orderId: payment.orderId,
+            paymentId: payment.paymentId,
+            receipt: payment.receipt,
+            amount: payment.amount,
+            currency: payment.currency,
+            status: payment.status,
+            createdAt: payment.createdAt,
+            plan: {
+                id: payment.plan,
+                name: (planDetails === null || planDetails === void 0 ? void 0 : planDetails.name) || 'Unknown Plan',
+                credits: (planDetails === null || planDetails === void 0 ? void 0 : planDetails.credits) || 0,
+                price: (planDetails === null || planDetails === void 0 ? void 0 : planDetails.price) || 0,
+            },
+            user: payment.user,
+            metadata: payment.metadata,
+        };
+        return res.status(200).json({
+            status: true,
+            payment: detailedPayment
+        });
+    }
+    catch (error) {
+        console.error("getPaymentDetails error:", error);
+        return res.status(500).json({ status: false, message: "Internal server error" });
+    }
+};
+exports.getPaymentDetails = getPaymentDetails;

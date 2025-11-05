@@ -7,4 +7,6 @@ const PaymentRouter = (0, express_1.Router)();
 PaymentRouter.post("/create-order", user_middleware_1.cookieAuth, payments_controller_1.createOrder);
 PaymentRouter.post("/verify-payment", user_middleware_1.cookieAuth, payments_controller_1.verifyPayment);
 PaymentRouter.get("/plan-details", user_middleware_1.cookieAuth, payments_controller_1.getPlanDetails);
+PaymentRouter.get("/history", user_middleware_1.cookieAuth, payments_controller_1.getPaymentHistory);
+PaymentRouter.get("/details/:paymentId", user_middleware_1.cookieAuth, payments_controller_1.getPaymentDetails);
 exports.default = PaymentRouter;
