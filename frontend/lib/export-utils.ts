@@ -22,7 +22,7 @@ interface QuizData {
 /**
  * Export quiz to PDF using browser's print functionality
  */
-export function exportToPDF(quiz: QuizData, includeAnswers: boolean) {
+export function exportToPDF(quiz: QuizData, includeAnswers: boolean, includeWatermark = true) {
   // Create a new window with formatted content
   const printWindow = window.open('', '_blank')
   if (!printWindow) {
@@ -81,10 +81,33 @@ export function exportToPDF(quiz: QuizData, includeAnswers: boolean) {
             margin: 0 auto;
             padding: 20px;
           }
+          /* Watermark layer placed beneath content */
+          .watermark {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            opacity: 0.06;
+            z-index: 0;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 48px;
+            color: #94a3b8;
+          }
+          .content { position: relative; z-index: 1; }
         </style>
       </head>
       <body>
-        <div style="margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #e2e8f0;">
+        ${includeWatermark ? `
+        <div class="watermark">
+          <img src="/logo.svg" alt="logo" style="width:120px;height:120px;object-fit:contain;opacity:0.9;" />
+          <div>Created by Prashn — prashn.swastify.life</div>
+        </div>
+        ` : ''}
+        <div class="content" style="margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #e2e8f0;">
           <h1 style="margin: 0 0 8px 0; color: #0f172a; font-size: 28px;">${quiz.title}</h1>
           ${quiz.description ? `<p style="margin: 0; color: #64748b;">${quiz.description}</p>` : ''}
           <p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 14px;">
@@ -92,6 +115,11 @@ export function exportToPDF(quiz: QuizData, includeAnswers: boolean) {
           </p>
         </div>
         ${questionsHTML}
+        ${includeWatermark ? `
+        <div class="content" style="margin-top: 40px; font-size: 12px; color: #94a3b8; text-align: center;">
+          Exported by Prashn — https://prashn.swastify.life
+        </div>
+        ` : ''}
       </body>
     </html>
   `
@@ -108,8 +136,9 @@ export function exportToPDF(quiz: QuizData, includeAnswers: boolean) {
 /**
  * Export quiz to Excel (CSV format for broad compatibility)
  */
-export function exportToExcel(quiz: QuizData, includeAnswers: boolean) {
+export function exportToExcel(quiz: QuizData, includeAnswers: boolean, includeWatermark = true) {
   const rows: string[][] = [
+    ...(includeWatermark ? [['Exported by:', 'Prashn'], ['URL:', 'https://prashn.swastify.life'], []] : []),
     ['Quiz Title:', quiz.title],
     ['Description:', quiz.description || ''],
     ['Total Questions:', String(quiz.questions.length)],
@@ -168,8 +197,12 @@ export function exportToExcel(quiz: QuizData, includeAnswers: boolean) {
 /**
  * Export quiz to plain text file (fallback for DOCX)
  */
-export function exportToText(quiz: QuizData, includeAnswers: boolean) {
-  let content = `${quiz.title}\n${'='.repeat(quiz.title.length)}\n\n`
+export function exportToText(quiz: QuizData, includeAnswers: boolean, includeWatermark = true) {
+  let content = ''
+  if (includeWatermark) {
+    content += `Exported by: Prashn - https://prashn.swastify.life\n\n`
+  }
+  content += `${quiz.title}\n${'='.repeat(quiz.title.length)}\n\n`
   
   if (quiz.description) {
     content += `${quiz.description}\n\n`
@@ -237,18 +270,19 @@ function sanitizeFilename(filename: string): string {
 export function exportQuiz(
   quiz: QuizData,
   format: 'pdf' | 'excel' | 'docx' | 'text',
-  includeAnswers: boolean
+  includeAnswers: boolean,
+  includeWatermark = true
 ) {
   switch (format) {
     case 'pdf':
-      return exportToPDF(quiz, includeAnswers)
+      return exportToPDF(quiz, includeAnswers, includeWatermark)
     case 'excel':
-      return exportToExcel(quiz, includeAnswers)
+      return exportToExcel(quiz, includeAnswers, includeWatermark)
     case 'text':
     case 'docx':
       // For now, use text format as DOCX fallback
       // Can be enhanced later with docx library
-      return exportToText(quiz, includeAnswers)
+      return exportToText(quiz, includeAnswers, includeWatermark)
     default:
       throw new Error(`Unsupported format: ${format}`)
   }

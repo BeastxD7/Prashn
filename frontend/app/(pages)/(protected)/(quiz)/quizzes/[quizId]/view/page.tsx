@@ -337,7 +337,7 @@ export default function GeneratedQuizPage() {
         description: quiz.description,
         questions: questions,
       }
-      exportQuiz(quizData, format, includeAnswers)
+      exportQuiz(quizData, format, includeAnswers, true) // always include watermark
       toast.success(`Exporting to ${format.toUpperCase()}...`)
       setShowExportMenu(false)
     } catch (err: any) {
@@ -348,24 +348,25 @@ export default function GeneratedQuizPage() {
 
   return (
     <div className="min-h-screen w-full bg-linear-to-br from-background via-background/95 to-background/85">
-      <div className="mx-auto w-full max-w-4xl px-4 py-12">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold bg-clip-text bg-linear-to-r from-indigo-600 to-cyan-400 text-transparent">{quiz.title}</h1>
-            <p className="text-sm text-muted-foreground mt-1">{quiz.description}</p>
+      <div className="mx-auto w-full max-w-4xl px-3 sm:px-4 py-8 sm:py-12">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-semibold bg-clip-text bg-linear-to-r from-indigo-600 to-cyan-400 text-transparent break-words">{quiz.title}</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">{quiz.description}</p>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <Button onClick={() => router.back()} variant="outline">Back</Button>
+          <div className="flex-shrink-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button onClick={() => router.back()} variant="outline" size="sm" className="text-xs sm:text-sm">Back</Button>
               
               {/* Export dropdown menu */}
               <div className="relative">
                 <Button 
                   onClick={() => setShowExportMenu(!showExportMenu)} 
                   variant="outline"
-                  className="gap-2"
+                  size="sm"
+                  className="gap-2 text-xs sm:text-sm"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                   Export
                 </Button>
                 
@@ -377,15 +378,15 @@ export default function GeneratedQuizPage() {
                       onClick={() => setShowExportMenu(false)}
                     />
                     
-                    {/* Dropdown menu */}
-                    <div className="absolute right-0 top-full mt-2 w-64 rounded-lg border border-border/60 bg-background/95 backdrop-blur shadow-lg z-20 p-3">
+                    {/* Dropdown menu - responsive positioning */}
+                    <div className="absolute right-0 sm:right-0 left-auto top-full mt-2 w-[calc(100vw-2rem)] sm:w-64 max-w-xs rounded-lg border border-border/60 bg-background/95 backdrop-blur shadow-lg z-20 p-3">
                       <div className="mb-3 pb-3 border-b border-border/40">
-                        <label className="flex items-center gap-2 cursor-pointer text-sm">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
                           <input 
                             type="checkbox" 
                             checked={includeAnswers}
                             onChange={(e) => setIncludeAnswers(e.target.checked)}
-                            className="w-4 h-4 rounded border-border"
+                            className="w-4 h-4 rounded border-border flex-shrink-0"
                           />
                           <span>Include answers & explanations</span>
                         </label>
@@ -396,10 +397,10 @@ export default function GeneratedQuizPage() {
                           onClick={() => handleExport('pdf')}
                           className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors text-left"
                         >
-                          <FileText className="w-4 h-4 text-red-500" />
-                          <div>
-                            <div className="text-sm font-medium">Export as PDF</div>
-                            <div className="text-xs text-muted-foreground">Print-ready document</div>
+                          <FileText className="w-4 h-4 text-red-500 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-xs sm:text-sm font-medium">Export as PDF</div>
+                            <div className="text-[10px] sm:text-xs text-muted-foreground truncate">Print-ready document</div>
                           </div>
                         </button>
                         
@@ -407,10 +408,10 @@ export default function GeneratedQuizPage() {
                           onClick={() => handleExport('excel')}
                           className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors text-left"
                         >
-                          <FileSpreadsheet className="w-4 h-4 text-green-500" />
-                          <div>
-                            <div className="text-sm font-medium">Export as Excel (CSV)</div>
-                            <div className="text-xs text-muted-foreground">Spreadsheet format</div>
+                          <FileSpreadsheet className="w-4 h-4 text-green-500 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-xs sm:text-sm font-medium">Export as Excel (CSV)</div>
+                            <div className="text-[10px] sm:text-xs text-muted-foreground truncate">Spreadsheet format</div>
                           </div>
                         </button>
                         
@@ -418,10 +419,10 @@ export default function GeneratedQuizPage() {
                           onClick={() => handleExport('text')}
                           className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors text-left"
                         >
-                          <File className="w-4 h-4 text-blue-500" />
-                          <div>
-                            <div className="text-sm font-medium">Export as Text</div>
-                            <div className="text-xs text-muted-foreground">Plain text file</div>
+                          <File className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-xs sm:text-sm font-medium">Export as Text</div>
+                            <div className="text-[10px] sm:text-xs text-muted-foreground truncate">Plain text file</div>
                           </div>
                         </button>
                       </div>
@@ -431,7 +432,7 @@ export default function GeneratedQuizPage() {
               </div>
               
               {isOwner && !editableQuestions ? (
-                <Button onClick={() => { setEditableQuestions(JSON.parse(JSON.stringify(questions))); setDirty(false); }}>Edit</Button>
+                <Button onClick={() => { setEditableQuestions(JSON.parse(JSON.stringify(questions))); setDirty(false); }} size="sm" className="text-xs sm:text-sm">Edit</Button>
               ) : null}
 
               {/* When editing, show privacy toggle for owners */}
@@ -443,28 +444,28 @@ export default function GeneratedQuizPage() {
 
         <div className="space-y-6">
           {isOwner ? (
-            <div className="mb-4 rounded-2xl border border-border/60 bg-linear-to-br from-white/5 to-background/60 p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
+            <div className="mb-4 rounded-2xl border border-border/60 bg-linear-to-br from-white/5 to-background/60 p-3 sm:p-4">
+              <div className="flex flex-col gap-3 sm:gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  <div className="flex items-start sm:items-center gap-2">
                     <Toggle checked={isPublic} disabled={privacyLoading || Boolean(editableQuestions)} onChange={(v: boolean) => handleSetPrivacy(Boolean(v))} />
-                    <div>
-                      <div className="text-sm font-medium">{isPublic ? 'Public' : 'Private'}</div>
-                      <div className="text-xs text-muted-foreground">Whether anyone can access this quiz</div>
+                    <div className="flex-1">
+                      <div className="text-xs sm:text-sm font-medium">{isPublic ? 'Public' : 'Private'}</div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">Whether anyone can access this quiz</div>
                     </div>
                   </div>
 
-                  <div className="hidden sm:block h-full border-l border-border/40 ml-2 mr-2" />
+                  <div className="hidden sm:block h-8 border-l border-border/40" />
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start sm:items-center gap-2">
                     <Toggle checked={requiresLogin} disabled={requireLoading || Boolean(editableQuestions)} onChange={(v: boolean) => handleSetRequireLogin(Boolean(v))} />
-                    <div>
-                      <div className="text-sm font-medium">{requiresLogin ? 'Requires login' : 'No login required'}</div>
-                      <div className="text-xs text-muted-foreground">Only signed-in users may take this quiz</div>
+                    <div className="flex-1">
+                      <div className="text-xs sm:text-sm font-medium">{requiresLogin ? 'Requires login' : 'No login required'}</div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">Only signed-in users may take this quiz</div>
                     </div>
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground">Owner settings</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground text-right">Owner settings</div>
               </div>
             </div>
           ) : null}
@@ -472,25 +473,25 @@ export default function GeneratedQuizPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-end gap-2">
                 {dirty ? (
-                  <Button variant="outline" onClick={() => { const q = data?.questions?.questions ?? data?.questions ?? data?.quiz?.questions ?? []; setEditableQuestions(JSON.parse(JSON.stringify(q))); setDirty(false); }}>Reset</Button>
+                  <Button variant="outline" size="sm" onClick={() => { const q = data?.questions?.questions ?? data?.questions ?? data?.quiz?.questions ?? []; setEditableQuestions(JSON.parse(JSON.stringify(q))); setDirty(false); }} className="text-xs sm:text-sm">Reset</Button>
                 ) : null}
                 {dirty ? (
-                  <Button onClick={handleSaveAll} disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
+                  <Button size="sm" onClick={handleSaveAll} disabled={saving} className="text-xs sm:text-sm">{saving ? 'Saving...' : 'Save'}</Button>
                 ) : null}
               </div>
 
               {editableQuestions.map((q: any, idx: number) => (
-                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-linear-to-br from-white/5 to-background/60 p-4 space-y-3 shadow-sm">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-xs text-muted-foreground">Question {idx + 1}</div>
-                      <Badge variant="outline" className="uppercase">{String(q.type).replace(/_/g, ' ')}</Badge>
+                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-linear-to-br from-white/5 to-background/60 p-3 sm:p-4 space-y-3 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">Question {idx + 1}</div>
+                      <Badge variant="outline" className="uppercase text-[10px] sm:text-xs">{String(q.type).replace(/_/g, ' ')}</Badge>
                     </div>
                     <div className="flex items-center gap-2">
                       <select
                         value={q.difficulty ?? ''}
                         onChange={(e) => updateQuestionField(idx, 'difficulty', e.target.value)}
-                        className="rounded-md bg-background/50 px-2 py-1 text-sm"
+                        className="rounded-md bg-background/50 px-2 py-1 text-xs sm:text-sm"
                       >
                         <option value="">Difficulty</option>
                         <option value="EASY">EASY</option>
@@ -501,35 +502,35 @@ export default function GeneratedQuizPage() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-muted-foreground">Content</label>
-                    <textarea value={q.content} onChange={(e) => updateQuestionField(idx, 'content', e.target.value)} className="w-full rounded-md border border-border/50 bg-background/50 p-2 text-sm shadow-inner" />
+                    <label className="text-[10px] sm:text-xs text-muted-foreground">Content</label>
+                    <textarea value={q.content} onChange={(e) => updateQuestionField(idx, 'content', e.target.value)} className="w-full rounded-md border border-border/50 bg-background/50 p-2 text-xs sm:text-sm shadow-inner min-h-[80px]" />
                   </div>
 
                   {q.options ? (
                     <div className="space-y-2">
-                      <label className="text-xs text-muted-foreground">Options</label>
+                      <label className="text-[10px] sm:text-xs text-muted-foreground">Options</label>
                       <div className="space-y-2">
                         {q.options.map((opt: string, oi: number) => (
                           <div key={oi} className="flex items-center gap-2">
-                            <input value={opt} onChange={(e) => updateOption(idx, oi, e.target.value)} className="flex-1 rounded-md border border-border/50 bg-background/50 p-2 text-sm" />
-                            <Button variant="ghost" type="button" onClick={() => removeOption(idx, oi)}>Remove</Button>
+                            <input value={opt} onChange={(e) => updateOption(idx, oi, e.target.value)} className="flex-1 rounded-md border border-border/50 bg-background/50 p-2 text-xs sm:text-sm" />
+                            <Button variant="ghost" size="sm" type="button" onClick={() => removeOption(idx, oi)} className="text-xs">Remove</Button>
                           </div>
                         ))}
                         {isMCQ(q) ? (
-                          <Button variant="outline" size="sm" type="button" onClick={() => addOption(idx)}>Add option</Button>
+                          <Button variant="outline" size="sm" type="button" onClick={() => addOption(idx)} className="text-xs sm:text-sm">Add option</Button>
                         ) : null}
                       </div>
                     </div>
                   ) : null}
 
                   <div>
-                    <label className="text-xs text-muted-foreground">Answer</label>
-                    <input value={q.answer} onChange={(e) => updateQuestionField(idx, 'answer', e.target.value)} className="w-full rounded-md border border-border/50 bg-background/50 p-2 text-sm" />
+                    <label className="text-[10px] sm:text-xs text-muted-foreground">Answer</label>
+                    <input value={q.answer} onChange={(e) => updateQuestionField(idx, 'answer', e.target.value)} className="w-full rounded-md border border-border/50 bg-background/50 p-2 text-xs sm:text-sm" />
                   </div>
 
                   <div>
-                    <label className="text-xs text-muted-foreground">Explanation</label>
-                    <textarea value={q.explanation ?? ''} onChange={(e) => updateQuestionField(idx, 'explanation', e.target.value)} className="w-full rounded-md border border-border/50 bg-background/50 p-2 text-sm" />
+                    <label className="text-[10px] sm:text-xs text-muted-foreground">Explanation</label>
+                    <textarea value={q.explanation ?? ''} onChange={(e) => updateQuestionField(idx, 'explanation', e.target.value)} className="w-full rounded-md border border-border/50 bg-background/50 p-2 text-xs sm:text-sm min-h-[60px]" />
                   </div>
                 </div>
               ))}
@@ -537,34 +538,34 @@ export default function GeneratedQuizPage() {
           ) : (
             <div className="space-y-4">
               {questions.map((q: any, idx: number) => (
-                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-linear-to-br from-white/2 to-background/60 p-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground">Question {idx + 1}</div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="uppercase">{String(q.type).replace(/_/g, ' ')}</Badge>
-                      {q.difficulty ? <Badge variant="outline" className="uppercase">{String(q.difficulty)}</Badge> : null}
+                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-linear-to-br from-white/2 to-background/60 p-3 sm:p-4 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                    <div className="text-[10px] sm:text-xs text-muted-foreground">Question {idx + 1}</div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline" className="uppercase text-[10px] sm:text-xs">{String(q.type).replace(/_/g, ' ')}</Badge>
+                      {q.difficulty ? <Badge variant="outline" className="uppercase text-[10px] sm:text-xs">{String(q.difficulty)}</Badge> : null}
                     </div>
                   </div>
 
-                  <p className="mt-3 text-sm text-foreground">{q.content}</p>
+                  <p className="mt-3 text-xs sm:text-sm text-foreground break-words">{q.content}</p>
 
                   {q.options?.length ? (
-                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                    <ul className="mt-3 space-y-2 text-xs sm:text-sm text-muted-foreground">
                       {q.options.map((opt: string, oi: number) => (
                         <li key={oi} className="flex items-start gap-2">
-                          <span className="mt-1 text-xs font-medium text-muted-foreground">{String.fromCharCode(65 + oi)}.</span>
-                          <span>{opt}</span>
+                          <span className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs font-medium text-muted-foreground shrink-0">{String.fromCharCode(65 + oi)}.</span>
+                          <span className="break-words">{opt}</span>
                         </li>
                       ))}
                     </ul>
                   ) : null}
 
-                  <div className="mt-3 text-sm text-foreground">
-                    <span className="font-medium">Answer:</span> {q.answer}
+                  <div className="mt-3 text-xs sm:text-sm text-foreground">
+                    <span className="font-medium">Answer:</span> <span className="break-words">{q.answer}</span>
                   </div>
 
                   {q.explanation ? (
-                    <p className="mt-2 text-sm text-muted-foreground"><span className="font-medium text-foreground">Explanation:</span> {q.explanation}</p>
+                    <p className="mt-2 text-xs sm:text-sm text-muted-foreground break-words"><span className="font-medium text-foreground">Explanation:</span> {q.explanation}</p>
                   ) : null}
                 </div>
               ))}
