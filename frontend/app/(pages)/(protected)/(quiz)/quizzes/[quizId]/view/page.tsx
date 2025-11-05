@@ -350,7 +350,7 @@ export default function GeneratedQuizPage() {
     <div className="min-h-screen w-full bg-linear-to-br from-background via-background/95 to-background/85">
       <div className="mx-auto w-full max-w-4xl px-3 sm:px-4 py-8 sm:py-12">
         <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="flex-1">
+          <div className="flex-1 py-2">
             <h1 className="text-xl sm:text-2xl font-semibold bg-clip-text bg-linear-to-r from-indigo-600 to-cyan-400 text-transparent break-words">{quiz.title}</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">{quiz.description}</p>
           </div>
@@ -379,7 +379,7 @@ export default function GeneratedQuizPage() {
                     />
 
                     {/* Dropdown menu - mobile: fixed bottom sheet; sm+: anchored dropdown */}
-                    <div className="sm:absolute fixed bottom-0 left-0 right-0 top-auto sm:top-full mt-0 sm:mt-2 sm:right-0 sm:left-auto w-full sm:w-64 max-w-none sm:max-w-xs rounded-t-lg sm:rounded-lg border border-border/60 bg-background/95 backdrop-blur shadow-lg z-20 p-3">
+                    <div className=" sm:absolute fixed bottom-0 left-0 right-0 top-auto sm:top-full mt-0 sm:mt-2 sm:right-0 sm:left-auto w-full sm:w-64 max-w-none sm:max-w-xs rounded-t-lg sm:rounded-lg border border-border/60 bg-background backdrop-blur-sm shadow-lg z-20 p-3 h-fit">
                       <div className="mb-3 pb-3 border-b border-border/40">
                         <label className="flex items-center gap-2 cursor-pointer text-sm">
                           <input 

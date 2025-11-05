@@ -19,118 +19,264 @@ interface QuizData {
   questions: Question[]
 }
 
+// Static ES module imports for PDF generation (html2canvas + jsPDF)
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
+
 /**
  * Export quiz to PDF using browser's print functionality
  */
-export function exportToPDF(quiz: QuizData, includeAnswers: boolean, includeWatermark = true) {
-  // Create a new window with formatted content
-  const printWindow = window.open('', '_blank')
-  if (!printWindow) {
-    throw new Error('Failed to open print window. Please allow popups.')
-  }
+export async function exportToPDF(quiz: QuizData, includeAnswers: boolean, includeWatermark = true) {
+  // Generate a PDF directly in-browser using html2canvas + jsPDF (static ES imports).
 
-  const questionsHTML = quiz.questions
-    .map((q, idx) => {
-      const optionsHTML = q.options?.length
-        ? `<ul style="margin: 8px 0; padding-left: 20px;">
-            ${q.options.map((opt, oi) => `<li style="margin: 4px 0;">${String.fromCharCode(65 + oi)}. ${opt}</li>`).join('')}
-           </ul>`
-        : ''
+  // Build the same HTML content inside a hidden container we can render to canvas
+  const wrapper = document.createElement('div')
+  wrapper.style.position = 'fixed'
+  wrapper.style.left = '-9999px'
+  wrapper.style.top = '0'
+  wrapper.style.width = '800px'
+  wrapper.style.padding = '20px'
+  wrapper.style.background = '#fff'
+  wrapper.style.color = '#111827'
+  wrapper.innerHTML = (() => {
+    const questionsHTML = quiz.questions
+      .map((q, idx) => {
+        const optionsHTML = q.options?.length
+          ? `<ul class="options-list">${q.options.map((opt, oi) => `<li><strong>${String.fromCharCode(65 + oi)}.</strong> ${opt}</li>`).join('')}</ul>`
+          : ''
 
-      const answerHTML = includeAnswers
-        ? `<div style="margin-top: 8px; padding: 8px; background: #f0f9ff; border-left: 3px solid #0ea5e9;">
-             <strong>Answer:</strong> ${Array.isArray(q.answer) ? q.answer.join(', ') : q.answer}
-             ${q.explanation ? `<br/><strong>Explanation:</strong> ${q.explanation}` : ''}
-           </div>`
-        : ''
+        const answerHTML = includeAnswers
+          ? `<div class="answer-box">
+               <strong>Answer:</strong> <span class="answer-text">${Array.isArray(q.answer) ? q.answer.join(', ') : q.answer}</span>
+               ${q.explanation ? `<br><strong>Explanation:</strong> ${q.explanation}` : ''}
+             </div>`
+          : ''
 
-      return `
-        <div style="margin-bottom: 24px; page-break-inside: avoid;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <strong style="color: #334155;">Question ${idx + 1}</strong>
-            <div style="display: flex; gap: 8px;">
-              <span style="padding: 2px 8px; background: #e0e7ff; border-radius: 4px; font-size: 11px; text-transform: uppercase;">${q.type.replace(/_/g, ' ')}</span>
-              ${q.difficulty ? `<span style="padding: 2px 8px; background: #fef3c7; border-radius: 4px; font-size: 11px;">${q.difficulty}</span>` : ''}
+        return `
+          <div class="question-card">
+            <div class="question-header">
+              <span class="question-number">Question ${idx + 1}</span>
+              <span class="question-badges">${q.type.replace(/_/g, ' ').toUpperCase()} ${q.difficulty ? `| ${q.difficulty.toUpperCase()}` : ''}</span>
             </div>
-          </div>
-          <p style="margin: 12px 0; color: #1e293b;">${q.content}</p>
-          ${optionsHTML}
-          ${answerHTML}
-        </div>
-      `
-    })
-    .join('')
+            <div class="question-content">${q.content}</div>
+            ${optionsHTML}
+            ${answerHTML}
+          </div>`
+      })
+      .join('')
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
+    return `
+      <!DOCTYPE html>
+      <html>
       <head>
-        <meta charset="utf-8">
+        <meta charset="UTF-8">
         <title>${quiz.title}</title>
         <style>
-          @media print {
-            body { margin: 0; }
-            @page { margin: 1cm; }
-          }
-          * { box-sizing: border-box; }
           body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            color: #1e293b;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #000;
+            background: #fff;
+            padding: 30px;
+            margin: 0;
           }
-          /* Watermark layer placed beneath content */
+          .header {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 15px;
+          }
+          .header h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 0 8px 0;
+          }
+          .header .description {
+            font-size: 12px;
+            color: #555;
+            margin: 0 0 10px 0;
+          }
+          .header .meta {
+            font-size: 11px;
+            color: #666;
+          }
+          .question-card {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+          }
+          .question-header {
+            margin-bottom: 10px;
+          }
+          .question-number {
+            font-weight: bold;
+            font-size: 14px;
+            display: inline-block;
+          }
+          .question-badges {
+            float: right;
+            font-size: 10px;
+            text-transform: uppercase;
+          }
+          .question-content {
+            margin: 10px 0;
+            font-size: 13px;
+          }
+          .options-list {
+            margin: 10px 0;
+            padding-left: 0;
+            list-style: none;
+          }
+          .options-list li {
+            margin: 6px 0;
+            font-size: 12px;
+            padding-left: 5px;
+          }
+          .answer-box {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-left: 3px solid #666;
+            font-size: 12px;
+          }
+          .answer-box .answer-text {
+            font-weight: bold;
+          }
+          .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 10px;
+            color: #999;
+          }
           .watermark {
             position: fixed;
-            left: 50%;
             top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%) rotate(-30deg);
-            opacity: 0.06;
-            z-index: 0;
+            font-size: 60px;
+            color: #f0f0f0;
+            opacity: 0.3;
+            font-weight: bold;
             pointer-events: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            font-size: 48px;
-            color: #94a3b8;
           }
-          .content { position: relative; z-index: 1; }
         </style>
       </head>
       <body>
-        ${includeWatermark ? `
-        <div class="watermark">
-          <img src="/logo.svg" alt="logo" style="width:120px;height:120px;object-fit:contain;opacity:0.9;" />
-          <div>Created by Prashn — prashn.swastify.life</div>
-        </div>
-        ` : ''}
-        <div class="content" style="margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #e2e8f0;">
-          <h1 style="margin: 0 0 8px 0; color: #0f172a; font-size: 28px;">${quiz.title}</h1>
-          ${quiz.description ? `<p style="margin: 0; color: #64748b;">${quiz.description}</p>` : ''}
-          <p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 14px;">
-            Total Questions: ${quiz.questions.length} | Generated on ${new Date().toLocaleDateString()}
-          </p>
+        ${includeWatermark ? `<div class="watermark">PRASHN</div>` : ''}
+        <div class="header">
+          <h1>${quiz.title}</h1>
+          ${quiz.description ? `<p class="description">${quiz.description}</p>` : ''}
+          <div class="meta">Total Questions: ${quiz.questions.length} | Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
         </div>
         ${questionsHTML}
-        ${includeWatermark ? `
-        <div class="content" style="margin-top: 40px; font-size: 12px; color: #94a3b8; text-align: center;">
-          Exported by Prashn — https://prashn.swastify.life
-        </div>
-        ` : ''}
+        ${includeWatermark ? `<div class="footer">Exported by <strong>Prashn</strong> — prashn.swastify.life</div>` : ''}
       </body>
-    </html>
-  `
+      </html>`
+  })()
 
-  printWindow.document.write(html)
-  printWindow.document.close()
-  
-  // Small delay to ensure content is loaded before triggering print
-  setTimeout(() => {
-    printWindow.print()
-  }, 250)
+  // Use an isolated iframe with srcdoc to avoid inheriting site/global styles that may
+  // contain unsupported color functions (like lab()). html2canvas will render the
+  // iframe body which contains only the HTML we provide.
+  const html = wrapper.innerHTML
+
+  const iframe = document.createElement('iframe') as HTMLIFrameElement
+  iframe.style.position = 'fixed'
+  iframe.style.left = '-9999px'
+  iframe.style.top = '0'
+  iframe.style.width = '800px'
+  iframe.style.height = '1120px'
+  iframe.style.border = '0'
+  iframe.srcdoc = html
+  document.body.appendChild(iframe)
+
+  try {
+    // Wait for iframe to load content. Use onload but also a timeout fallback.
+    await new Promise<void>((resolve) => {
+      const done = () => resolve()
+      iframe.addEventListener('load', done)
+      // Fallback: resolve after 700ms in case load doesn't fire reliably
+      setTimeout(() => {
+        try { resolve() } catch { /* ignore */ }
+      }, 700)
+    })
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document
+    if (!doc) throw new Error('Failed to access iframe document for PDF export')
+
+    // Capture each question card separately to prevent page breaks in the middle of questions
+    const questionCards = doc.querySelectorAll('.question-card')
+    const header = doc.querySelector('.header')
+    const footer = doc.querySelector('.footer')
+
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
+    const pdfWidth = pdf.internal.pageSize.getWidth()
+    const pdfHeight = pdf.internal.pageSize.getHeight()
+    const margin = 10
+    const usableWidth = pdfWidth - (margin * 2)
+    let currentY = margin
+
+    // Add header on first page
+    if (header) {
+      const headerCanvas = await html2canvas(header as HTMLElement, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        width: 800 
+      })
+      const headerImgData = headerCanvas.toDataURL('image/png')
+      const headerHeight = (headerCanvas.height * usableWidth) / headerCanvas.width
+      
+      pdf.addImage(headerImgData, 'PNG', margin, currentY, usableWidth, headerHeight)
+      currentY += headerHeight + 5
+    }
+
+    // Add each question card
+    for (let i = 0; i < questionCards.length; i++) {
+      const card = questionCards[i] as HTMLElement
+      const cardCanvas = await html2canvas(card, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        width: 800 
+      })
+      const cardImgData = cardCanvas.toDataURL('image/png')
+      const cardHeight = (cardCanvas.height * usableWidth) / cardCanvas.width
+
+      // Check if card fits on current page, if not add new page
+      if (currentY + cardHeight > pdfHeight - margin - 15) {
+        pdf.addPage()
+        currentY = margin
+      }
+
+      pdf.addImage(cardImgData, 'PNG', margin, currentY, usableWidth, cardHeight)
+      currentY += cardHeight + 4 // small gap between questions
+    }
+
+    // Add footer on last page
+    if (footer && includeWatermark) {
+      const footerCanvas = await html2canvas(footer as HTMLElement, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        width: 800 
+      })
+      const footerImgData = footerCanvas.toDataURL('image/png')
+      const footerHeight = (footerCanvas.height * usableWidth) / footerCanvas.width
+      
+      // Check if footer fits, if not add new page
+      if (currentY + footerHeight > pdfHeight - margin) {
+        pdf.addPage()
+        currentY = margin
+      }
+      
+      pdf.addImage(footerImgData, 'PNG', margin, currentY, usableWidth, footerHeight)
+    }
+
+    pdf.save(`${sanitizeFilename(quiz.title)}.pdf`)
+  } finally {
+    // clean up
+    if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper)
+  }
 }
 
 /**
@@ -138,7 +284,7 @@ export function exportToPDF(quiz: QuizData, includeAnswers: boolean, includeWate
  */
 export function exportToExcel(quiz: QuizData, includeAnswers: boolean, includeWatermark = true) {
   const rows: string[][] = [
-    ...(includeWatermark ? [['Exported by:', 'Prashn'], ['URL:', 'https://prashn.swastify.life'], []] : []),
+    ...(includeWatermark ? [['Exported by:', 'प्रश्न | Prashn'], ['URL:', 'https://prashn.swastify.life'], []] : []),
     ['Quiz Title:', quiz.title],
     ['Description:', quiz.description || ''],
     ['Total Questions:', String(quiz.questions.length)],
