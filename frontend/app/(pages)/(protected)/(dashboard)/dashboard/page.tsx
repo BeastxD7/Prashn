@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, use } from "react"
-import { Zap, Plus, BookOpen, Loader2 } from "lucide-react"
+import { Zap, Plus, BookOpen, Loader2, FileText, HelpCircle } from "lucide-react"
 import { FeatureCard } from "@/components/custom/FeatureCard"
 import { useAuth } from "@/context/auth-provider"
 import { api } from "@/api-config/api"
@@ -113,9 +113,47 @@ const Dashboard = () => {
                 Create amazing quizzes with AI-powered generation
               </p>
 
+              {/* Compact cards section - Credits + Stats in squares on mobile */}
+              <div className="mt-6 sm:hidden">
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Credits Card - compact square on mobile */}
+                  <div className="bg-linear-to-br from-blue-600 to-cyan-600 rounded-xl p-3 text-white shadow-md">
+                    <Zap className="w-4 h-4 mb-2" />
+                    <div className="text-xs opacity-90 mb-1">Credits</div>
+                    <div className="text-xl font-bold">{dashboardData?.credits || 0}</div>
+                  </div>
+
+                  {/* Stats cards - compact squares */}
+                  {dashboardData?.stats ? (
+                    <>
+                      <div className="rounded-xl p-3 bg-linear-to-br from-indigo-600 to-pink-500 text-white shadow-md">
+                        <FileText className="w-4 h-4 mb-2" />
+                        <div className="text-xs opacity-90 mb-1">Quizzes</div>
+                        <div className="text-xl font-bold">{dashboardData.stats.totalQuizzes}</div>
+                      </div>
+
+                      <div className="rounded-xl p-3 bg-linear-to-br from-green-500 to-emerald-500 text-white shadow-md">
+                        <HelpCircle className="w-4 h-4 mb-2" />
+                        <div className="text-xs opacity-90 mb-1">Questions</div>
+                        <div className="text-xl font-bold">{dashboardData.stats.totalQuestions}</div>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+
+                {/* Add Credits button on mobile */}
+                <Link
+                  href="/add-credits"
+                  className="mt-3 inline-flex bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors items-center justify-center gap-2 text-sm w-full"
+                >
+                  <Plus className="w-4 h-4 shrink-0" />
+                  Add Credits
+                </Link>
+              </div>
+
              {/* Stats section - two gradient cards showing totals */}
               {dashboardData?.stats ? ( 
-                <div className="mt-6">
+                <div className="mt-6 hidden sm:block">
                   <h3 className="text-sm font-medium text-foreground mb-3">Stats</h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -158,26 +196,18 @@ const Dashboard = () => {
               ) : null}
             </div>
 
-            {/* Credits Card - hidden on xs (below `sm`) to avoid overlap; visible from `sm` upwards and sits in the right column on `lg` */}
-            <div className="hidden sm:flex mt-4 sm:mt-0 sm:col-span-1 justify-end">
-              <div className="bg-linear-to-br from-blue-600 to-cyan-600 dark:from-blue-500 dark:to-cyan-500 rounded-2xl p-3 sm:p-6 text-white shadow-lg hover:shadow-xl transition-shadow w-20 h-20 sm:w-56 sm:h-auto flex items-center justify-center">
-                <div className="w-full h-full flex flex-col items-center sm:items-start justify-center gap-2">
-                <div className="flex items-center gap-2 mb-0">
-                  <Zap className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-                  <span className="text-xs sm:text-sm font-medium opacity-90 hidden sm:inline">Available Credits</span>
-                </div>
-
-                <div className="text-2xl sm:text-3xl font-bold mb-0 sm:mb-2">{dashboardData?.credits || 0}</div>
-
-                {/* Add credits: icon-only on small screens, full button on sm+ */}
-                <div className="w-full flex items-center justify-center sm:justify-start">
-                  <Link href="/add-credits" className="sm:hidden w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
-                    <Plus className="w-4 h-4" />
-                  </Link>
-
+            {/* Credits Card - shows on desktop in the right column */}
+            <div className="hidden sm:flex sm:col-span-1 justify-end">
+              <div className="bg-linear-to-br from-blue-600 to-cyan-600 dark:from-blue-500 dark:to-cyan-500 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow w-56">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 shrink-0" />
+                    <span className="text-sm font-medium opacity-90">Available Credits</span>
+                  </div>
+                  <div className="text-3xl font-bold mb-2">{dashboardData?.credits || 0}</div>
                   <Link
                     href="/add-credits"
-                    className="hidden sm:inline-flex bg-white/20 hover:bg-white/30 text-white font-semibold py-1 px-3 rounded-lg transition-colors items-center justify-center gap-2 text-xs sm:text-sm"
+                    className="inline-flex bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-4 rounded-lg transition-colors items-center justify-center gap-2 text-sm"
                   >
                     <Plus className="w-4 h-4 shrink-0" />
                     Add Credits
@@ -185,7 +215,7 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-            </div>
+
           </div>
         </div>
 
