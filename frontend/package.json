@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint ."
+  "build": "next build",
+  "start": "next start",
+  "start:prod": "next start -p 3003",
+  "lint": "eslint ."
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
