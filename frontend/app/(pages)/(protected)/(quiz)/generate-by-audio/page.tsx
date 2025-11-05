@@ -62,6 +62,7 @@ export default function GenerateQuizByAudio() {
   }, [])
 
   const creditsNeeded = calculateCredits(questionCount)
+  const isGenerateDisabled = loading || !audioFile
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -264,7 +265,7 @@ export default function GenerateQuizByAudio() {
                 </div>
               </div>
 
-              <button onClick={handleGenerate} disabled={loading} className="mt-6 w-full rounded-xl bg-linear-to-r from-blue-500 via-cyan-500 to-teal-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+              <button onClick={handleGenerate} disabled={isGenerateDisabled} className="mt-6 w-full rounded-xl bg-linear-to-r from-blue-500 via-cyan-500 to-teal-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
                 {loading ? (<span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Generating...</span>) : 'Generate Quiz'}
               </button>
             </div>

@@ -21,7 +21,12 @@ export function AuthPrompt({ open, onOpenChange }: AuthPromptProps) {
   const router = useRouter()
 
   const handleLogin = () => {
-    router.push(`/login?from=${window.location.pathname}`)
+    const currentUrl = typeof window !== "undefined"
+      ? `${window.location.pathname}${window.location.search}`
+      : "/"
+    const encoded = encodeURIComponent(currentUrl || "/")
+    onOpenChange(false)
+    router.push(`/login?from=${encoded}`)
   }
 
   return (

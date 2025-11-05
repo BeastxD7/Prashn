@@ -46,6 +46,7 @@ const GenerateQuizByText = () => {
   const [userCredits, setUserCredits] = useState<number | null>(null)
   const [authPromptOpen, setAuthPromptOpen] = useState(false)
   const { user } = useAuth()
+
   const router = useRouter()
 
   const credits = calculateCredits(questionCount)
@@ -163,6 +164,9 @@ const GenerateQuizByText = () => {
     fetchCredits()
     return () => { mounted = false }
   }, [])
+
+  const isGenerateDisabled =
+    loading || quizName.trim().length < 5 || textContent.trim().length < 5
 
   return (
     <div className="min-h-screen w-full bg-linear-to-br from-background via-background/95 to-background/85">
@@ -353,7 +357,7 @@ const GenerateQuizByText = () => {
 
               <button
                 onClick={handleGenerate}
-                disabled={loading}
+                disabled={isGenerateDisabled}
                 className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-blue-500 via-cyan-500 to-teal-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (

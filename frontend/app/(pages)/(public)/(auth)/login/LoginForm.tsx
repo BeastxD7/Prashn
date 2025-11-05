@@ -23,6 +23,7 @@ export default function LoginForm() {
   const searchParams = useSearchParams()
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { login: loginWithContext } = useAuth()
 
   const {
     register,
@@ -45,7 +46,9 @@ export default function LoginForm() {
   async function onSubmit(data: LoginSchemaType) {
     setIsSubmitting(true)
     try {
-      const res =  await api.user.login(data)
+  const res = loginWithContext
+        ? await loginWithContext(data)
+        : await api.user.login(data)
       if (!res) {
         toast.error("Login failed")
         return

@@ -111,6 +111,11 @@ export default function GenerateQuizByYoutube() {
     }
   }, [youtubeUrl])
 
+  const trimmedTitle = title.trim()
+  const trimmedUrl = youtubeUrl.trim()
+  const hasValidYoutubeUrl = trimmedUrl.length > 0 && validateYoutube(trimmedUrl)
+  const isGenerateDisabled = loading || trimmedTitle.length < 5 || !hasValidYoutubeUrl
+
   const handleGenerate = async () => {
     if (!user) {
       setAuthPromptOpen(true)
@@ -311,7 +316,7 @@ export default function GenerateQuizByYoutube() {
                 </div>
               </div>
 
-              <button onClick={handleGenerate} disabled={loading} className="mt-6 w-full rounded-xl bg-linear-to-r from-blue-500 via-cyan-500 to-teal-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+              <button onClick={handleGenerate} disabled={isGenerateDisabled} className="mt-6 w-full rounded-xl bg-linear-to-r from-blue-500 via-cyan-500 to-teal-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
                 {loading ? (<span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Generating...</span>) : 'Generate Quiz'}
               </button>
             </div>
