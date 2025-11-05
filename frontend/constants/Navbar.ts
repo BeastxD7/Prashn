@@ -1,18 +1,10 @@
 import { Home, FileText, File, Mic, Youtube } from "lucide-react"
 
-type NavItem = {
-    title: string
-    url: string
-    icon: typeof Home
-    requiresAuth?: boolean
-}
-
-export const navItems: NavItem[] = [
+export const navItems = [
     {
         title: "Dashboard",
         url: "/dashboard",
         icon: Home,
-        requiresAuth: true,
     },
     {
         title: "Generate by Text",

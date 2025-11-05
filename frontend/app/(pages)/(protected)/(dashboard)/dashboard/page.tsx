@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { Zap, Plus, BookOpen } from "lucide-react"
 import { FeatureCard } from "@/components/custom/FeatureCard"
 import { useAuth } from "@/context/auth-provider"
 import { api } from "@/api-config/api"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 interface DashboardData {
   credits: number
@@ -29,12 +30,20 @@ interface DashboardData {
 }
 
 const Dashboard = () => {
-  const user = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = useRouter();
 
   useEffect(() => {
+    if (!user) {
+      setDashboardData(null)
+      setLoading(false)
+      return
+    }
+
     const fetchDashboardData = async () => {
+      setLoading(true)
       try {
         const response = await api.dashboard.getData()
         if (response?.data?.data) {
@@ -48,7 +57,27 @@ const Dashboard = () => {
     }
 
     fetchDashboardData()
-  }, [])
+  }, [user])
+
+  if (!user) {
+    const loginUrl = `/login?from=${encodeURIComponent("/dashboard")}`
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="max-w-md rounded-2xl border border-border/60 bg-card/70 p-8 text-center shadow-[0_35px_120px_-60px_rgba(0,0,0,0.45)] backdrop-blur">
+          <h1 className="text-2xl font-semibold text-foreground">Login required</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Please sign in to access your dashboard and manage your quizzes.
+          </p>
+          <Link
+            href={loginUrl}
+            className="mt-6 inline-flex items-center justify-center rounded-lg bg-linear-to-r from-blue-500 via-cyan-500 to-teal-500 px-5 py-2 text-sm font-semibold text-white shadow-lg transition hover:shadow-xl"
+          >
+            Go to login
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="pt-20 min-h-screen w-full  pb-12 overflow-x-hidden">
@@ -64,7 +93,7 @@ const Dashboard = () => {
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground dark:text-white mb-2">
                 Welcome Back,{" "}
                 <span className="bg-linear-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
-                  {user?.user?.firstName || "User"}
+                  {user?.firstName || "User"}
                 </span>
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground dark:text-slate-400">
@@ -121,7 +150,7 @@ const Dashboard = () => {
               <div className="bg-linear-to-br from-blue-600 to-cyan-600 dark:from-blue-500 dark:to-cyan-500 rounded-2xl p-3 sm:p-6 text-white shadow-lg hover:shadow-xl transition-shadow w-20 h-20 sm:w-56 sm:h-auto flex items-center justify-center">
                 <div className="w-full h-full flex flex-col items-center sm:items-start justify-center gap-2">
                 <div className="flex items-center gap-2 mb-0">
-                  <Zap className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                  <Zap className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                   <span className="text-xs sm:text-sm font-medium opacity-90 hidden sm:inline">Available Credits</span>
                 </div>
 
@@ -137,7 +166,7 @@ const Dashboard = () => {
                     href="/add-credits"
                     className="hidden sm:inline-flex bg-white/20 hover:bg-white/30 text-white font-semibold py-1 px-3 rounded-lg transition-colors items-center justify-center gap-2 text-xs sm:text-sm"
                   >
-                    <Plus className="w-4 h-4 flex-shrink-0" />
+                    <Plus className="w-4 h-4 shrink-0" />
                     Add Credits
                   </Link>
                 </div>

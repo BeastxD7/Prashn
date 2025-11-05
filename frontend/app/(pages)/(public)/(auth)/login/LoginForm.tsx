@@ -8,6 +8,7 @@ import { toast } from "sonner"
 
 import { LoginSchema, type LoginSchemaType } from "@/zod/loginForm"
 import { api } from "@/api-config/api"
+import { useAuth } from "@/context/auth-provider"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -22,6 +23,7 @@ export default function LoginForm() {
   const searchParams = useSearchParams()
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { refresh } = useAuth()
   const {
     register,
     handleSubmit,
@@ -52,6 +54,11 @@ export default function LoginForm() {
 
       if (success) {
         toast.success(res?.data?.message || "Logged in successfully")
+        try {
+          await refresh()
+        } catch (e) {
+          console.error("Failed to refresh user state after login", e)
+        }
         router.replace(redirectPath)
         router.refresh()
       } else {
