@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, use } from "react"
-import { Zap, Plus, BookOpen } from "lucide-react"
+import { Zap, Plus, BookOpen, Loader2 } from "lucide-react"
 import { FeatureCard } from "@/components/custom/FeatureCard"
 import { useAuth } from "@/context/auth-provider"
 import { api } from "@/api-config/api"
@@ -58,6 +58,19 @@ const Dashboard = () => {
 
     fetchDashboardData()
   }, [user])
+
+  // If auth is still resolving, show a loader so users don't see the login prompt
+  // while the auth provider is determining whether they're signed in.
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="flex items-center gap-3 rounded-lg bg-card/70 p-4 shadow-md backdrop-blur">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Loading your dashboard…</span>
+        </div>
+      </div>
+    )
+  }
 
   if (!user) {
     const loginUrl = `/login?from=${encodeURIComponent("/dashboard")}`

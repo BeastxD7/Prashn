@@ -1,0 +1,15 @@
+{
+  "name": "Prashn",
+  "short_name": "Prashn",
+  "description": "Next-gen edtech powered by AI.",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "display": "standalone"
+}

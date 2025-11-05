@@ -14,8 +14,6 @@ import { navItems } from "@/constants/Navbar";
 import Link from "next/link";
 import { useState } from "react";
 
-
-
 export function NavbarDemo() {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
