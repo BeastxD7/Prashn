@@ -12,15 +12,25 @@ import {
 } from "@/components/ui/resizable-navbar";
 import { navItems } from "@/constants/Navbar";
 import Link from "next/link";
-import  { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useAuth } from "@/context/auth-provider";
 
 
 
 export function NavbarDemo() {
 
-  const router = useRouter();
+  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const resolvedNavItems = useMemo(() => {
+    return navItems.map((item) => {
+      if (!user && item.requiresAuth) {
+        const encoded = encodeURIComponent(item.url || "/");
+        return { ...item, url: `/login?from=${encoded}` };
+      }
+      return item;
+    });
+  }, [user]);
 
   return (
     <div className="relative w-full ">
@@ -28,7 +38,7 @@ export function NavbarDemo() {
         {/* Desktop Navigation */}
         <NavBody>
           <NavbarLogo />
-          <NavItems items={navItems} />
+          <NavItems items={resolvedNavItems} />
           <div className="flex items-center gap-4">
             <NavbarButton as={Link} variant="primary" href="/login">Login</NavbarButton>
           </div>
@@ -48,7 +58,7 @@ export function NavbarDemo() {
             isOpen={isMobileMenuOpen}
             onClose={() => setIsMobileMenuOpen(false)}
           >
-            {navItems.map((item, idx) => (
+            {resolvedNavItems.map((item, idx) => (
               <a
                 key={`mobile-link-${idx}`}
                 href={item.url}

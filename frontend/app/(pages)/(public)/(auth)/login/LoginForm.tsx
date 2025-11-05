@@ -8,7 +8,6 @@ import { toast } from "sonner"
 
 import { LoginSchema, type LoginSchemaType } from "@/zod/loginForm"
 import { api } from "@/api-config/api"
-import { useAuth } from "@/context/auth-provider"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -23,8 +22,6 @@ export default function LoginForm() {
   const searchParams = useSearchParams()
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { login: loginWithContext } = useAuth()
-
   const {
     register,
     handleSubmit,
@@ -46,14 +43,12 @@ export default function LoginForm() {
   async function onSubmit(data: LoginSchemaType) {
     setIsSubmitting(true)
     try {
-  const res = loginWithContext
-        ? await loginWithContext(data)
-        : await api.user.login(data)
+      const res = await api.user.login(data)
       if (!res) {
         toast.error("Login failed")
         return
       }
-      const success = res?.data?.suctcess ?? res?.data?.status ?? res?.data?.data?.status
+      const success = res?.data?.success ?? res?.data?.status ?? res?.data?.data?.status
 
       if (success) {
         toast.success(res?.data?.message || "Logged in successfully")
