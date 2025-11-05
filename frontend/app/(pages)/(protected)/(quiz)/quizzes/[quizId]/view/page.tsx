@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Download, FileText, FileSpreadsheet, File } from 'lucide-react'
+import { exportQuiz } from '@/lib/export-utils'
 // small inline Toggle to avoid missing Switch component
 function Toggle({ checked, disabled, onChange }: { checked: boolean; disabled?: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -33,6 +35,8 @@ export default function GeneratedQuizPage() {
   const [privacyLoading, setPrivacyLoading] = useState(false)
   const [requiresLogin, setRequiresLogin] = useState<boolean>(Boolean(data?.requiresLogin ?? data?.quiz?.requiresLogin ?? false))
   const [requireLoading, setRequireLoading] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const [includeAnswers, setIncludeAnswers] = useState(true)
 
   useEffect(() => {
     let mounted = true
@@ -326,6 +330,22 @@ export default function GeneratedQuizPage() {
     }
   }
 
+  const handleExport = (format: 'pdf' | 'excel' | 'docx' | 'text') => {
+    try {
+      const quizData = {
+        title: quiz.title || 'Quiz',
+        description: quiz.description,
+        questions: questions,
+      }
+      exportQuiz(quizData, format, includeAnswers)
+      toast.success(`Exporting to ${format.toUpperCase()}...`)
+      setShowExportMenu(false)
+    } catch (err: any) {
+      const msg = err?.message ?? 'Export failed'
+      toast.error(msg)
+    }
+  }
+
   return (
     <div className="min-h-screen w-full bg-linear-to-br from-background via-background/95 to-background/85">
       <div className="mx-auto w-full max-w-4xl px-4 py-12">
@@ -337,6 +357,79 @@ export default function GeneratedQuizPage() {
           <div>
             <div className="flex items-center gap-2">
               <Button onClick={() => router.back()} variant="outline">Back</Button>
+              
+              {/* Export dropdown menu */}
+              <div className="relative">
+                <Button 
+                  onClick={() => setShowExportMenu(!showExportMenu)} 
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Export
+                </Button>
+                
+                {showExportMenu && (
+                  <>
+                    {/* Backdrop to close menu */}
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowExportMenu(false)}
+                    />
+                    
+                    {/* Dropdown menu */}
+                    <div className="absolute right-0 top-full mt-2 w-64 rounded-lg border border-border/60 bg-background/95 backdrop-blur shadow-lg z-20 p-3">
+                      <div className="mb-3 pb-3 border-b border-border/40">
+                        <label className="flex items-center gap-2 cursor-pointer text-sm">
+                          <input 
+                            type="checkbox" 
+                            checked={includeAnswers}
+                            onChange={(e) => setIncludeAnswers(e.target.checked)}
+                            className="w-4 h-4 rounded border-border"
+                          />
+                          <span>Include answers & explanations</span>
+                        </label>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <button
+                          onClick={() => handleExport('pdf')}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors text-left"
+                        >
+                          <FileText className="w-4 h-4 text-red-500" />
+                          <div>
+                            <div className="text-sm font-medium">Export as PDF</div>
+                            <div className="text-xs text-muted-foreground">Print-ready document</div>
+                          </div>
+                        </button>
+                        
+                        <button
+                          onClick={() => handleExport('excel')}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors text-left"
+                        >
+                          <FileSpreadsheet className="w-4 h-4 text-green-500" />
+                          <div>
+                            <div className="text-sm font-medium">Export as Excel (CSV)</div>
+                            <div className="text-xs text-muted-foreground">Spreadsheet format</div>
+                          </div>
+                        </button>
+                        
+                        <button
+                          onClick={() => handleExport('text')}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors text-left"
+                        >
+                          <File className="w-4 h-4 text-blue-500" />
+                          <div>
+                            <div className="text-sm font-medium">Export as Text</div>
+                            <div className="text-xs text-muted-foreground">Plain text file</div>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+              
               {isOwner && !editableQuestions ? (
                 <Button onClick={() => { setEditableQuestions(JSON.parse(JSON.stringify(questions))); setDirty(false); }}>Edit</Button>
               ) : null}
