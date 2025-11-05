@@ -20,7 +20,7 @@ import { LogOut } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 export function AppSidebar() {
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
 
   return (
     <Sidebar  collapsible="icon">
@@ -29,16 +29,20 @@ export function AppSidebar() {
           <SidebarGroupLabel>Prashn</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navItems.map((item) => {
+                // only show dashboard link to authenticated users
+                if (item.url === "/dashboard" && !user) return null
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <Link href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -62,23 +66,31 @@ export function AppSidebar() {
             <div className="flex items-center">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        await logout()
-                      } catch (e) {
-                        console.error("Logout failed", e)
-                      }
-                    }}
-                    aria-label="Log out"
-                    className="p-2"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </Button>
+                  {user ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          await logout()
+                        } catch (e) {
+                          console.error("Logout failed", e)
+                        }
+                      }}
+                      aria-label="Log out"
+                      className="p-2"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </Button>
+                  ) : (
+                    <Link href="/login">
+                      <Button variant="ghost" size="sm" className="p-2">
+                        Login
+                      </Button>
+                    </Link>
+                  )}
                 </TooltipTrigger>
-                <TooltipContent side="left">Log out</TooltipContent>
+                <TooltipContent side="left">{user ? 'Log out' : 'Log in'}</TooltipContent>
               </Tooltip>
             </div>
           </div>
