@@ -21,7 +21,6 @@ import Link from "next/link"
 export default function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { login } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -46,12 +45,12 @@ export default function LoginForm() {
   async function onSubmit(data: LoginSchemaType) {
     setIsSubmitting(true)
     try {
-      const res = login ? await login(data) : await api.user.login(data)
+      const res =  await api.user.login(data)
       if (!res) {
         toast.error("Login failed")
         return
       }
-      const success = res?.data?.success ?? res?.data?.status ?? res?.data?.data?.status
+      const success = res?.data?.suctcess ?? res?.data?.status ?? res?.data?.data?.status
 
       if (success) {
         toast.success(res?.data?.message || "Logged in successfully")
