@@ -26,7 +26,7 @@ import { jsPDF } from 'jspdf'
 /**
  * Export quiz to PDF using browser's print functionality
  */
-export async function exportToPDF(quiz: QuizData, includeAnswers: boolean, includeWatermark = true) {
+export async function exportToPDF(quiz: QuizData, includeAnswers: boolean, includeWatermark = false) {
   // Generate a PDF directly in-browser using html2canvas + jsPDF (static ES imports).
 
   // Build the same HTML content inside a hidden container we can render to canvas
@@ -55,8 +55,8 @@ export async function exportToPDF(quiz: QuizData, includeAnswers: boolean, inclu
         return `
           <div class="question-card">
             <div class="question-header">
-              <span class="question-number">Question ${idx + 1}</span>
-              <span class="question-badges">${q.type.replace(/_/g, ' ').toUpperCase()} ${q.difficulty ? `| ${q.difficulty.toUpperCase()}` : ''}</span>
+              <div class="question-number">Question ${idx + 1}</div>
+              <div class="question-badges">${q.type.replace(/_/g, ' ')} ${q.difficulty ? `• ${q.difficulty}` : ''}</div>
             </div>
             <div class="question-content">${q.content}</div>
             ${optionsHTML}
@@ -72,97 +72,144 @@ export async function exportToPDF(quiz: QuizData, includeAnswers: boolean, inclu
         <meta charset="UTF-8">
         <title>${quiz.title}</title>
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            line-height: 1.5;
-            color: #000;
-            background: #fff;
-            padding: 30px;
+          * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: #ffffff;
+            padding: 20px 30px;
           }
           .header {
-            margin-bottom: 20px;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 18px;
+            border-bottom: 2px solid #e5e7eb;
           }
           .header h1 {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 0 0 8px 0;
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #111827;
+            line-height: 1.3;
           }
           .header .description {
-            font-size: 12px;
-            color: #555;
-            margin: 0 0 10px 0;
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 12px;
+            line-height: 1.5;
           }
           .header .meta {
             font-size: 11px;
-            color: #666;
+            color: #9ca3af;
+            font-weight: 500;
           }
           .question-card {
-            margin-bottom: 25px;
+            margin-bottom: 28px;
             page-break-inside: avoid;
+            padding: 16px 0;
+            background: transparent;
           }
           .question-header {
             margin-bottom: 10px;
           }
           .question-number {
-            font-weight: bold;
+            font-weight: 700;
             font-size: 14px;
+            color: #111827;
             display: inline-block;
           }
           .question-badges {
             float: right;
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
+            color: #9ca3af;
+            font-weight: 600;
+            letter-spacing: 0.5px;
           }
           .question-content {
-            margin: 10px 0;
-            font-size: 13px;
+            margin: 14px 0;
+            font-size: 14px;
+            color: #374151;
+            line-height: 1.7;
+            clear: both;
           }
           .options-list {
-            margin: 10px 0;
+            margin: 12px 0;
             padding-left: 0;
             list-style: none;
           }
           .options-list li {
             margin: 6px 0;
-            font-size: 12px;
-            padding-left: 5px;
+            font-size: 13px;
+            color: #4b5563;
+            padding: 6px 0;
+          }
+          .options-list li strong {
+            color: #111827;
+            margin-right: 8px;
           }
           .answer-box {
-            margin-top: 10px;
-            padding: 10px;
-            background: #f9f9f9;
-            border-left: 3px solid #666;
-            font-size: 12px;
+            margin-top: 14px;
+            padding: 10px 0 10px 14px;
+            border-left: 3px solid #3b82f6;
+            font-size: 13px;
+          }
+          .answer-box strong {
+            color: #1e40af;
+            font-weight: 600;
           }
           .answer-box .answer-text {
-            font-weight: bold;
+            color: #1e40af;
+            font-weight: 600;
           }
           .footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #ddd;
+            position: fixed;
+            bottom: 15px;
+            left: 0;
+            right: 0;
             text-align: center;
-            font-size: 10px;
-            color: #999;
+            font-size: 11px;
+            color: #9ca3af;
+            padding: 8px 40px;
+            width: 100%;
+          }
+          .footer strong {
+            color: #6b7280;
+            font-weight: 600;
           }
           .watermark {
             position: fixed;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(-30deg);
-            font-size: 60px;
-            color: #f0f0f0;
-            opacity: 0.3;
-            font-weight: bold;
+            transform: translate(-50%, -50%);
             pointer-events: none;
+            z-index: -1;
+            opacity: 0.15;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .watermark-text {
+            font-family: Arial, sans-serif;
+            font-size: 96px;
+            font-weight: 800;
+            color: #000000;
+            text-align: center;
+            transform: rotate(-25deg);
+            white-space: nowrap;
+            letter-spacing: 4px;
+            padding: 40px;
           }
         </style>
       </head>
       <body>
-        ${includeWatermark ? `<div class="watermark">PRASHN</div>` : ''}
+        ${includeWatermark ? `<div class="watermark"><div class="watermark-text">प्रश्न - Prashn</div></div>` : ''}
         <div class="header">
           <h1>${quiz.title}</h1>
           ${quiz.description ? `<p class="description">${quiz.description}</p>` : ''}
@@ -206,6 +253,7 @@ export async function exportToPDF(quiz: QuizData, includeAnswers: boolean, inclu
     // Capture each question card separately to prevent page breaks in the middle of questions
     const questionCards = doc.querySelectorAll('.question-card')
     const header = doc.querySelector('.header')
+    const watermark = doc.querySelector('.watermark')
     const footer = doc.querySelector('.footer')
 
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
@@ -214,6 +262,48 @@ export async function exportToPDF(quiz: QuizData, includeAnswers: boolean, inclu
     const margin = 10
     const usableWidth = pdfWidth - (margin * 2)
     let currentY = margin
+
+    // Capture watermark as a transparent layer (to be added to each page)
+    let watermarkImgData: string | null = null
+    let watermarkWidth = 0
+    let watermarkHeight = 0
+    if (watermark && includeWatermark) {
+      // Get the actual dimensions of the watermark element
+      const wmRect = (watermark as HTMLElement).getBoundingClientRect()
+      const watermarkCanvas = await html2canvas(watermark as HTMLElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: null, // transparent background
+        width: Math.max(800, wmRect.width * 1.5), // ensure enough width
+        height: Math.max(400, wmRect.height * 1.5), // ensure enough height
+        windowWidth: 800,
+        windowHeight: 1120
+      })
+      watermarkImgData = watermarkCanvas.toDataURL('image/png')
+      watermarkWidth = usableWidth
+      watermarkHeight = (watermarkCanvas.height * usableWidth) / watermarkCanvas.width
+    }
+
+    // Capture footer as a transparent layer (to be added to each page at bottom)
+    let footerImgData: string | null = null
+    let footerWidth = 0
+    let footerHeight = 0
+    if (footer && includeWatermark) {
+      // Get the actual dimensions of the footer element
+      const footerRect = (footer as HTMLElement).getBoundingClientRect()
+      const footerCanvas = await html2canvas(footer as HTMLElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: null, // transparent background
+        width: Math.max(800, footerRect.width * 1.2), // ensure enough width for full text
+        height: Math.max(50, footerRect.height * 1.5), // ensure enough height
+        windowWidth: 800,
+        windowHeight: 1120
+      })
+      footerImgData = footerCanvas.toDataURL('image/png')
+      footerWidth = usableWidth
+      footerHeight = (footerCanvas.height * usableWidth) / footerCanvas.width
+    }
 
     // Add header on first page
     if (header) {
@@ -230,46 +320,52 @@ export async function exportToPDF(quiz: QuizData, includeAnswers: boolean, inclu
       currentY += headerHeight + 5
     }
 
+    // Add watermark to first page (centered)
+    if (watermarkImgData && includeWatermark) {
+      const wmX = (pdfWidth - watermarkWidth) / 2
+      const wmY = (pdfHeight - watermarkHeight) / 2
+      pdf.addImage(watermarkImgData, 'PNG', wmX, wmY, watermarkWidth, watermarkHeight)
+    }
+
+    // Add footer to first page (at bottom)
+    if (footerImgData && includeWatermark) {
+      const footerY = pdfHeight - footerHeight - 5
+      pdf.addImage(footerImgData, 'PNG', margin, footerY, footerWidth, footerHeight)
+    }
+
     // Add each question card
     for (let i = 0; i < questionCards.length; i++) {
       const card = questionCards[i] as HTMLElement
       const cardCanvas = await html2canvas(card, { 
         scale: 2, 
         useCORS: true, 
-        backgroundColor: '#ffffff',
+        backgroundColor: null, // transparent to show watermark behind
         width: 800 
       })
       const cardImgData = cardCanvas.toDataURL('image/png')
       const cardHeight = (cardCanvas.height * usableWidth) / cardCanvas.width
 
-      // Check if card fits on current page, if not add new page
-      if (currentY + cardHeight > pdfHeight - margin - 15) {
+      // Check if card fits on current page, if not add new page (reserve space for footer)
+      if (currentY + cardHeight > pdfHeight - margin - footerHeight - 5) {
         pdf.addPage()
         currentY = margin
+        
+        // Add watermark to new page
+        if (watermarkImgData && includeWatermark) {
+          const wmX = (pdfWidth - watermarkWidth) / 2
+          const wmY = (pdfHeight - watermarkHeight) / 2
+          pdf.addImage(watermarkImgData, 'PNG', wmX, wmY, watermarkWidth, watermarkHeight)
+        }
+
+        // Add footer to new page
+        if (footerImgData && includeWatermark) {
+          const footerY = pdfHeight - footerHeight - 5
+          pdf.addImage(footerImgData, 'PNG', margin, footerY, footerWidth, footerHeight)
+        }
       }
 
       pdf.addImage(cardImgData, 'PNG', margin, currentY, usableWidth, cardHeight)
       currentY += cardHeight + 4 // small gap between questions
-    }
-
-    // Add footer on last page
-    if (footer && includeWatermark) {
-      const footerCanvas = await html2canvas(footer as HTMLElement, { 
-        scale: 2, 
-        useCORS: true, 
-        backgroundColor: '#ffffff',
-        width: 800 
-      })
-      const footerImgData = footerCanvas.toDataURL('image/png')
-      const footerHeight = (footerCanvas.height * usableWidth) / footerCanvas.width
-      
-      // Check if footer fits, if not add new page
-      if (currentY + footerHeight > pdfHeight - margin) {
-        pdf.addPage()
-        currentY = margin
-      }
-      
-      pdf.addImage(footerImgData, 'PNG', margin, currentY, usableWidth, footerHeight)
     }
 
     pdf.save(`${sanitizeFilename(quiz.title)}.pdf`)
@@ -282,7 +378,7 @@ export async function exportToPDF(quiz: QuizData, includeAnswers: boolean, inclu
 /**
  * Export quiz to Excel (CSV format for broad compatibility)
  */
-export function exportToExcel(quiz: QuizData, includeAnswers: boolean, includeWatermark = true) {
+export function exportToExcel(quiz: QuizData, includeAnswers: boolean, includeWatermark = false) {
   const rows: string[][] = [
     ...(includeWatermark ? [['Exported by:', 'प्रश्न | Prashn'], ['URL:', 'https://prashn.swastify.life'], []] : []),
     ['Quiz Title:', quiz.title],
@@ -343,7 +439,7 @@ export function exportToExcel(quiz: QuizData, includeAnswers: boolean, includeWa
 /**
  * Export quiz to plain text file (fallback for DOCX)
  */
-export function exportToText(quiz: QuizData, includeAnswers: boolean, includeWatermark = true) {
+export function exportToText(quiz: QuizData, includeAnswers: boolean, includeWatermark = false) {
   let content = ''
   if (includeWatermark) {
     content += `Exported by: Prashn - https://prashn.swastify.life\n\n`
@@ -417,7 +513,7 @@ export function exportQuiz(
   quiz: QuizData,
   format: 'pdf' | 'excel' | 'docx' | 'text',
   includeAnswers: boolean,
-  includeWatermark = true
+  includeWatermark = false
 ) {
   switch (format) {
     case 'pdf':
