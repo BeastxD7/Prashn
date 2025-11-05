@@ -377,21 +377,21 @@ export default function GeneratedQuizPage() {
                       className="fixed inset-0 z-10" 
                       onClick={() => setShowExportMenu(false)}
                     />
-                    
-                    {/* Dropdown menu - responsive positioning */}
-                    <div className="absolute right-0 sm:right-0 left-auto top-full mt-2 w-[calc(100vw-2rem)] sm:w-64 max-w-xs rounded-lg border border-border/60 bg-background/95 backdrop-blur shadow-lg z-20 p-3">
+
+                    {/* Dropdown menu - mobile: fixed bottom sheet; sm+: anchored dropdown */}
+                    <div className="sm:absolute fixed bottom-0 left-0 right-0 top-auto sm:top-full mt-0 sm:mt-2 sm:right-0 sm:left-auto w-full sm:w-64 max-w-none sm:max-w-xs rounded-t-lg sm:rounded-lg border border-border/60 bg-background/95 backdrop-blur shadow-lg z-20 p-3">
                       <div className="mb-3 pb-3 border-b border-border/40">
-                        <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
+                        <label className="flex items-center gap-2 cursor-pointer text-sm">
                           <input 
                             type="checkbox" 
                             checked={includeAnswers}
                             onChange={(e) => setIncludeAnswers(e.target.checked)}
                             className="w-4 h-4 rounded border-border flex-shrink-0"
                           />
-                          <span>Include answers & explanations</span>
+                          <span className="text-sm">Include answers & explanations</span>
                         </label>
                       </div>
-                      
+
                       <div className="space-y-1">
                         <button
                           onClick={() => handleExport('pdf')}
@@ -399,30 +399,30 @@ export default function GeneratedQuizPage() {
                         >
                           <FileText className="w-4 h-4 text-red-500 flex-shrink-0" />
                           <div className="min-w-0">
-                            <div className="text-xs sm:text-sm font-medium">Export as PDF</div>
-                            <div className="text-[10px] sm:text-xs text-muted-foreground truncate">Print-ready document</div>
+                            <div className="text-sm font-medium">Export as PDF</div>
+                            <div className="text-[11px] text-muted-foreground truncate">Print-ready document</div>
                           </div>
                         </button>
-                        
+
                         <button
                           onClick={() => handleExport('excel')}
                           className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors text-left"
                         >
                           <FileSpreadsheet className="w-4 h-4 text-green-500 flex-shrink-0" />
                           <div className="min-w-0">
-                            <div className="text-xs sm:text-sm font-medium">Export as Excel (CSV)</div>
-                            <div className="text-[10px] sm:text-xs text-muted-foreground truncate">Spreadsheet format</div>
+                            <div className="text-sm font-medium">Export as Excel (CSV)</div>
+                            <div className="text-[11px] text-muted-foreground truncate">Spreadsheet format</div>
                           </div>
                         </button>
-                        
+
                         <button
                           onClick={() => handleExport('text')}
                           className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors text-left"
                         >
                           <File className="w-4 h-4 text-blue-500 flex-shrink-0" />
                           <div className="min-w-0">
-                            <div className="text-xs sm:text-sm font-medium">Export as Text</div>
-                            <div className="text-[10px] sm:text-xs text-muted-foreground truncate">Plain text file</div>
+                            <div className="text-sm font-medium">Export as Text</div>
+                            <div className="text-[11px] text-muted-foreground truncate">Plain text file</div>
                           </div>
                         </button>
                       </div>
@@ -444,28 +444,28 @@ export default function GeneratedQuizPage() {
 
         <div className="space-y-6">
           {isOwner ? (
-            <div className="mb-4 rounded-2xl border border-border/60 bg-linear-to-br from-white/5 to-background/60 p-3 sm:p-4">
-              <div className="flex flex-col gap-3 sm:gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                  <div className="flex items-start sm:items-center gap-2">
+            <div className="mb-4 rounded-2xl border border-border/60 bg-linear-to-br from-white/5 to-background/60 p-3">
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex items-start sm:items-center gap-2 w-full">
                     <Toggle checked={isPublic} disabled={privacyLoading || Boolean(editableQuestions)} onChange={(v: boolean) => handleSetPrivacy(Boolean(v))} />
-                    <div className="flex-1">
-                      <div className="text-xs sm:text-sm font-medium">{isPublic ? 'Public' : 'Private'}</div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">Whether anyone can access this quiz</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{isPublic ? 'Public' : 'Private'}</div>
+                      <div className="text-[11px] text-muted-foreground truncate">Whether anyone can access this quiz</div>
                     </div>
                   </div>
 
-                  <div className="hidden sm:block h-8 border-l border-border/40" />
+                  <div className="h-0 sm:h-8 sm:border-l sm:border-border/40" />
 
-                  <div className="flex items-start sm:items-center gap-2">
+                  <div className="flex items-start sm:items-center gap-2 w-full">
                     <Toggle checked={requiresLogin} disabled={requireLoading || Boolean(editableQuestions)} onChange={(v: boolean) => handleSetRequireLogin(Boolean(v))} />
-                    <div className="flex-1">
-                      <div className="text-xs sm:text-sm font-medium">{requiresLogin ? 'Requires login' : 'No login required'}</div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">Only signed-in users may take this quiz</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{requiresLogin ? 'Requires login' : 'No login required'}</div>
+                      <div className="text-[11px] text-muted-foreground truncate">Only signed-in users may take this quiz</div>
                     </div>
                   </div>
                 </div>
-                <div className="text-[10px] sm:text-xs text-muted-foreground text-right">Owner settings</div>
+                <div className="text-[11px] text-muted-foreground text-right">Owner settings</div>
               </div>
             </div>
           ) : null}
@@ -538,34 +538,34 @@ export default function GeneratedQuizPage() {
           ) : (
             <div className="space-y-4">
               {questions.map((q: any, idx: number) => (
-                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-linear-to-br from-white/2 to-background/60 p-3 sm:p-4 shadow-sm">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-                    <div className="text-[10px] sm:text-xs text-muted-foreground">Question {idx + 1}</div>
+                <div key={q?.id ?? `${idx}-${q.content}`} className="rounded-2xl border border-border/60 bg-linear-to-br from-white/2 to-background/60 p-3 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="text-[11px] text-muted-foreground">Question {idx + 1}</div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className="uppercase text-[10px] sm:text-xs">{String(q.type).replace(/_/g, ' ')}</Badge>
-                      {q.difficulty ? <Badge variant="outline" className="uppercase text-[10px] sm:text-xs">{String(q.difficulty)}</Badge> : null}
+                      <Badge variant="outline" className="uppercase text-[11px]">{String(q.type).replace(/_/g, ' ')}</Badge>
+                      {q.difficulty ? <Badge variant="outline" className="uppercase text-[11px]">{String(q.difficulty)}</Badge> : null}
                     </div>
                   </div>
 
-                  <p className="mt-3 text-xs sm:text-sm text-foreground break-words">{q.content}</p>
+                  <p className="mt-3 text-sm text-foreground break-words">{q.content}</p>
 
                   {q.options?.length ? (
-                    <ul className="mt-3 space-y-2 text-xs sm:text-sm text-muted-foreground">
+                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                       {q.options.map((opt: string, oi: number) => (
                         <li key={oi} className="flex items-start gap-2">
-                          <span className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs font-medium text-muted-foreground shrink-0">{String.fromCharCode(65 + oi)}.</span>
+                          <span className="mt-0.5 text-xs font-medium text-muted-foreground shrink-0">{String.fromCharCode(65 + oi)}.</span>
                           <span className="break-words">{opt}</span>
                         </li>
                       ))}
                     </ul>
                   ) : null}
 
-                  <div className="mt-3 text-xs sm:text-sm text-foreground">
+                  <div className="mt-3 text-sm text-foreground">
                     <span className="font-medium">Answer:</span> <span className="break-words">{q.answer}</span>
                   </div>
 
                   {q.explanation ? (
-                    <p className="mt-2 text-xs sm:text-sm text-muted-foreground break-words"><span className="font-medium text-foreground">Explanation:</span> {q.explanation}</p>
+                    <p className="mt-2 text-sm text-muted-foreground break-words"><span className="font-medium text-foreground">Explanation:</span> {q.explanation}</p>
                   ) : null}
                 </div>
               ))}
