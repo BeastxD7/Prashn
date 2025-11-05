@@ -129,12 +129,12 @@ const Dashboard = () => {
 
                 {/* Add credits: icon-only on small screens, full button on sm+ */}
                 <div className="w-full flex items-center justify-center sm:justify-start">
-                  <Link href="/account/add-credits" className="sm:hidden w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
+                  <Link href="/add-credits" className="sm:hidden w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
                     <Plus className="w-4 h-4" />
                   </Link>
 
                   <Link
-                    href="/account/add-credits"
+                    href="/add-credits"
                     className="hidden sm:inline-flex bg-white/20 hover:bg-white/30 text-white font-semibold py-1 px-3 rounded-lg transition-colors items-center justify-center gap-2 text-xs sm:text-sm"
                   >
                     <Plus className="w-4 h-4 flex-shrink-0" />

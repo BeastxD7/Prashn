@@ -308,7 +308,7 @@ const GenerateQuizByPdf = () => {
                   </div>
                   <div>
                     <Button
-                      onClick={() => router.push('/account/add-credits')}
+                      onClick={() => router.push('/add-credits')}
                       className="rounded-md bg-white text-blue-600 hover:bg-white/90 font-semibold px-4 py-2"
                     >
                       + Add Credits
