@@ -62,7 +62,7 @@ const Dashboard = () => {
             {/* Welcome Section - spans 2 cols on large */}
               <div className="sm:col-span-2">
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground dark:text-white mb-2">
-                Welcome back,{" "}
+                Welcome Back,{" "}
                 <span className="bg-linear-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
                   {user?.user?.firstName || "User"}
                 </span>
@@ -129,12 +129,12 @@ const Dashboard = () => {
 
                 {/* Add credits: icon-only on small screens, full button on sm+ */}
                 <div className="w-full flex items-center justify-center sm:justify-start">
-                  <Link href="/add-credits" className="sm:hidden w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
+                  <Link href="/account/add-credits" className="sm:hidden w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
                     <Plus className="w-4 h-4" />
                   </Link>
 
                   <Link
-                    href="/add-credits"
+                    href="/account/add-credits"
                     className="hidden sm:inline-flex bg-white/20 hover:bg-white/30 text-white font-semibold py-1 px-3 rounded-lg transition-colors items-center justify-center gap-2 text-xs sm:text-sm"
                   >
                     <Plus className="w-4 h-4 flex-shrink-0" />

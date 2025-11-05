@@ -1,13 +1,14 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useMemo, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
 import { LoginSchema, type LoginSchemaType } from "@/zod/loginForm"
 import { api } from "@/api-config/api"
+import { useAuth } from "@/context/auth-provider"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -19,30 +20,49 @@ import Link from "next/link"
 
 export default function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { login } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginSchemaType>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginSchemaType>({
     resolver: zodResolver(LoginSchema),
     defaultValues: { username: "", password: "" },
   })
 
-
+  const redirectPath = useMemo(() => {
+    const from = searchParams?.get("from") ?? ""
+    if (!from) return "/dashboard"
+    if (!from.startsWith("/")) return "/dashboard"
+    if (from.startsWith("//")) return "/dashboard"
+    if (from === "/login" || from.startsWith("/auth")) return "/dashboard"
+    return from
+  }, [searchParams])
 
   async function onSubmit(data: LoginSchemaType) {
     setIsSubmitting(true)
     try {
-      {
-        const res = await api.user.login(data as any)
-        if (res && (res.data?.success || res.data?.status || res.data?.data?.status)) {
-          toast.success(res.data.message || "Logged in successfully")
-            router.push("/dashboard")
-        } else {
-          toast.error(res?.data?.message || "Login failed")
-        }
+      const res = login ? await login(data) : await api.user.login(data)
+      if (!res) {
+        toast.error("Login failed")
+        return
       }
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Something went wrong"
+      const success = res?.data?.success ?? res?.data?.status ?? res?.data?.data?.status
+
+      if (success) {
+        toast.success(res?.data?.message || "Logged in successfully")
+        router.replace(redirectPath)
+        router.refresh()
+      } else {
+        toast.error(res?.data?.message || "Login failed")
+      }
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string }
+      const msg = error?.response?.data?.message || error?.message || "Something went wrong"
       toast.error(msg)
     } finally {
       setIsSubmitting(false)
@@ -50,21 +70,21 @@ export default function LoginForm() {
   }
 
   return (
-  <Card className="w-full max-w-xl min-w-sm flex justify-between">
-      <CardHeader>
+    <Card className="flex w-full max-w-xl flex-col gap-6 p-6 sm:p-8">
+      <CardHeader className="space-y-3 p-0">
         <CardTitle>
-          <h1 className="font-bold text-2xl sm:text-3xl md:text-4xl lg:text-4xl bg-linear-to-b from-blue-400 to-blue-900 bg-clip-text text-transparent leading-none">
-            Welcome back
+          <h1 className="font-bold text-2xl sm:text-3xl md:text-4xl bg-linear-to-b from-blue-400 to-blue-900 bg-clip-text text-transparent leading-none">
+            Welcome Back
           </h1>
         </CardTitle>
         <CardDescription>
-          <p className="font-bold text-lg sm:text-lg md:text-xl lg:text-xl bg-clip-text text-transparent bg-linear-to-b from-neutral-900 to-neutral-700 dark:from-neutral-600 dark:to-white tracking-tight leading-none">
+          <p className="text-base sm:text-lg md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-neutral-900 to-neutral-700 dark:from-neutral-600 dark:to-white tracking-tight leading-tight">
             Sign in to continue to your account.
           </p>
         </CardDescription>
       </CardHeader>
-      <CardContent>
-  <form className="grid gap-4 w-full" onSubmit={handleSubmit(onSubmit)}>
+      <CardContent className="p-0">
+        <form className="grid w-full gap-4" onSubmit={handleSubmit(onSubmit)}>
           <Field>
             <FieldLabel>
               <Label className="font-bold text-sm sm:text-xl md:text-xl lg:text-xl bg-clip-text text-transparent bg-linear-to-b from-neutral-900 to-neutral-700 dark:from-neutral-600 dark:to-white tracking-tight leading-none">Username</Label>
@@ -95,9 +115,9 @@ export default function LoginForm() {
             </FieldContent>
           </Field>
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <Link href="/forgot-password" className="text-sm text-muted-foreground">Forgot password?</Link>
-            <Button type="submit" disabled={isSubmitting} className="ml-auto">
+            <Button type="submit" disabled={isSubmitting} className="sm:ml-auto">
               {isSubmitting ? "Signing in…" : "Sign in"}
             </Button>
           </div>
