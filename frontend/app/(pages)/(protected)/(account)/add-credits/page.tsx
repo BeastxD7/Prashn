@@ -211,8 +211,14 @@ export default function AddCreditsPage() {
   return (
     <>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
-      <div className="min-h-screen w-full bg-linear-to-br from-background via-background/95 to-background/80">
-        <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="min-h-screen w-full bg-linear-to-br from-blue-50 via-indigo-50/30 to-sky-50/20 dark:from-gray-950 dark:via-blue-950/20 dark:to-indigo-950/10 relative">
+        {/* Decorative blur orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-1/4 w-96 h-96 bg-blue-400/20 dark:bg-blue-500/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-indigo-400/20 dark:bg-indigo-500/5 rounded-full blur-3xl" />
+        </div>
+        
+        <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8 relative z-10">
           <div className="mb-12 text-center">
             <h1 className="bg-linear-to-r from-sky-500 via-primary to-indigo-500 bg-clip-text text-3xl font-semibold text-transparent sm:text-4xl">
               Add Credits
@@ -298,15 +304,7 @@ export default function AddCreditsPage() {
             ))}
           </div>
 
-          <div className="mt-10 text-center">
-            <Button
-              variant="ghost"
-              onClick={() => router.push("/dashboard")}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              ← Back to dashboard
-            </Button>
-          </div>
+          
         </div>
       </div>
     </>

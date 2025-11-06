@@ -67,8 +67,14 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6 bg-linear-to-br from-background via-primary/5 to-background">
-      <div className="w-full max-w-lg">
+    <div className="flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6 bg-linear-to-br from-blue-50 via-indigo-50/30 to-purple-50/20 dark:from-gray-950 dark:via-blue-950/50 dark:to-indigo-950/30 relative">
+      {/* Decorative gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-80 h-80 bg-indigo-400/20 dark:bg-indigo-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-blue-400/20 dark:bg-blue-500/10 rounded-full blur-3xl" />
+      </div>
+      
+      <div className="w-full max-w-lg relative z-10">
         <Card className="border-border/40 shadow-lg">
           <CardHeader className="space-y-2">
             

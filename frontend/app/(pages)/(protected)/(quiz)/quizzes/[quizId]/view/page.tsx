@@ -347,8 +347,13 @@ export default function GeneratedQuizPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-linear-to-br from-background via-background/95 to-background/85">
-      <div className="mx-auto w-full max-w-4xl px-3 sm:px-4 py-8 sm:py-12">
+    <div className="min-h-screen w-full bg-linear-to-br from-sky-50 via-blue-50/30 to-indigo-50/20 dark:from-gray-950 dark:via-sky-950/20 dark:to-blue-950/10 relative">
+      {/* Decorative blur orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-1/3 w-96 h-96 bg-sky-400/20 dark:bg-sky-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-1/3 w-96 h-96 bg-blue-400/20 dark:bg-blue-500/5 rounded-full blur-3xl" />
+      </div>
+      <div className="mx-auto w-full max-w-4xl px-3 sm:px-4 py-8 sm:py-12 relative z-10">
         <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex-1 py-2">
             <h1 className="text-xl sm:text-2xl font-semibold bg-clip-text bg-linear-to-r from-indigo-600 to-cyan-400 text-transparent break-words">{quiz.title}</h1>

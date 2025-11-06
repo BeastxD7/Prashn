@@ -149,9 +149,15 @@ export default function GenerateQuizByAudio() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-linear-to-br from-background via-background/95 to-background/85">
+    <div className="min-h-screen w-full bg-linear-to-br from-cyan-50 via-blue-50/30 to-indigo-50/20 dark:from-gray-950 dark:via-cyan-950/20 dark:to-blue-950/10 relative">
+      {/* Decorative blur orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 right-1/3 w-96 h-96 bg-cyan-400/20 dark:bg-cyan-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 left-1/3 w-96 h-96 bg-blue-400/20 dark:bg-blue-500/5 rounded-full blur-3xl" />
+      </div>
+      
       <AuthPrompt open={authPromptOpen} onOpenChange={setAuthPromptOpen} />
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-6 lg:px-8 relative z-10">
         <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-3">
             <span className="text-xs font-semibold uppercase tracking-[0.32em] text-primary/80">Generator</span>

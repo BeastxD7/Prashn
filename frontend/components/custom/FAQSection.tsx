@@ -47,21 +47,28 @@ const faqs = [
 
 export default function FAQSection() {
   return (
-    <section className="w-full py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background to-primary/5">
-      <div className="max-w-3xl mx-auto">
+    <section className="w-full py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-linear-to-b from-transparent via-blue-50/50 to-transparent dark:via-blue-950/20 relative">
+      {/* Decorative gradient blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-0 w-72 h-72 bg-blue-300/20 dark:bg-blue-600/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-0 w-72 h-72 bg-purple-300/20 dark:bg-purple-600/10 rounded-full blur-3xl" />
+      </div>
+      
+      <div className="max-w-3xl mx-auto relative z-10">
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground mb-4">
-            Frequently Asked
-            <span className="block blue-gradient-text">Questions</span>
+          <h2 className="font-bold text-2xl sm:text-3xl md:text-4xl bg-linear-to-b from-blue-400 to-blue-900 bg-clip-text text-transparent leading-none mb-4">
+            Frequently Asked Questions
           </h2>
-          <p className="text-lg text-muted-foreground">Everything you need to know about Prashn AI Quiz Generator</p>
+          <p className="text-base sm:text-lg md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-neutral-900 to-neutral-700 dark:from-neutral-600 dark:to-white tracking-tight leading-tight">
+            Everything you need to know about Prashn AI Quiz Generator
+          </p>
         </div>
 
-        <div className="rounded-2xl border border-primary/10 bg-card/50 backdrop-blur-sm overflow-hidden shadow-lg">
+        <div className="rounded-2xl border border-blue-500/10 bg-card/50 backdrop-blur-sm overflow-hidden shadow-lg">
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border-b border-primary/5 last:border-b-0">
-                <AccordionTrigger className="px-6 py-4 text-left hover:bg-primary/5 transition-colors duration-300">
+              <AccordionItem key={index} value={`item-${index}`} className="border-b border-blue-500/5 last:border-b-0">
+                <AccordionTrigger className="px-6 py-4 text-left hover:bg-blue-500/5 transition-colors duration-300">
                   <span className="text-base md:text-lg font-semibold text-foreground">{faq.question}</span>
                 </AccordionTrigger>
                 <AccordionContent className="px-6 pb-4 text-muted-foreground leading-relaxed">

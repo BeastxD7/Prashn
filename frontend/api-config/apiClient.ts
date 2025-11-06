@@ -44,11 +44,13 @@ apiClient.interceptors.response.use(
 
     const url = originalRequest?.url || "";
 
-    // ✅ Do NOT refresh for these calls
+    // ✅ Do NOT refresh for these calls - they handle auth themselves
     const isRefreshCall = url.includes("/users/refresh");
     const isMeCall = url.includes("/users/me");
+    const isLoginCall = url.includes("/users/login");
+    const isRegisterCall = url.includes("/users/register");
 
-    if (isRefreshCall || isMeCall) {
+    if (isRefreshCall || isMeCall || isLoginCall || isRegisterCall) {
       return Promise.reject(error);
     }
 

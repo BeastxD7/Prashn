@@ -93,8 +93,14 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="pt-20 min-h-screen w-full  pb-12 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+    <div className="pt-20 min-h-screen w-full pb-12 overflow-x-hidden bg-linear-to-br from-blue-50 via-indigo-50/30 to-cyan-50/20 dark:from-gray-950 dark:via-blue-950/20 dark:to-indigo-950/10 relative">
+      {/* Decorative blur orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 right-1/4 w-96 h-96 bg-blue-400/20 dark:bg-blue-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 left-1/4 w-96 h-96 bg-cyan-400/20 dark:bg-cyan-500/5 rounded-full blur-3xl" />
+      </div>
+      
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 relative z-10">
         <div className="mb-8 sm:mb-12">
           {/* Use a 2-column grid on small screens so credits can sit at top-right, and switch to 3 columns on large */}
           {/* Use flex column on xs with absolute small credits so welcome area can be full width; switch to grid at sm */}

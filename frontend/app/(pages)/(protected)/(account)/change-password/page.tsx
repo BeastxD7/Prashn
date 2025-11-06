@@ -96,8 +96,14 @@ export default function ChangePasswordPage() {
 
   if (isSuccess) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6 bg-linear-to-br from-background via-primary/5 to-background">
-        <Card className="w-full max-w-lg border-border/40 shadow-lg">
+      <div className="flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6 bg-linear-to-br from-blue-50 via-sky-50/30 to-cyan-50/20 dark:from-gray-950 dark:via-blue-950/20 dark:to-sky-950/10 relative">
+        {/* Decorative blur orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/20 dark:bg-blue-500/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-400/20 dark:bg-sky-500/5 rounded-full blur-3xl" />
+        </div>
+        
+        <Card className="w-full max-w-lg border-border/40 shadow-lg relative z-10">
           <CardHeader className="space-y-2 text-center">
             <CardTitle className="text-2xl sm:text-3xl font-bold">Password Changed</CardTitle>
             <CardDescription className="text-base">
@@ -110,8 +116,14 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6 bg-linear-to-br from-background via-accent/5 to-background">
-      <div className="w-full max-w-lg">
+    <div className="flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6 bg-linear-to-br from-indigo-50 via-blue-50/30 to-sky-50/20 dark:from-gray-950 dark:via-indigo-950/20 dark:to-blue-950/10 relative">
+      {/* Decorative blur orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-indigo-400/20 dark:bg-indigo-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-blue-400/20 dark:bg-blue-500/5 rounded-full blur-3xl" />
+      </div>
+      
+      <div className="w-full max-w-lg relative z-10">
         <Card className="border-border/40 shadow-lg">
           <CardHeader className="space-y-2">
             

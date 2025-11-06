@@ -10,26 +10,29 @@ export default function HeroSection() {
       <ContainerScroll
         titleComponent={
           <>
-            <h1 className="text-center text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight text-foreground mb-4">
-              Create Quizzes in
-              <span className="block bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+            <div className="text-center mb-10">
+              <p className="text-3xl sm:text-6xl md:text-7xl font-medium text-muted-foreground mb-2">Create Quizzes in</p>
+              <h1 className="text-2xl sm:text-5xl md:text-6xl font-medium bg-linear-to-b from-blue-400 to-blue-900 bg-clip-text text-transparent leading-none">
                 Seconds, Not Hours
-              </span>
-            </h1>
+              </h1>
+            </div>
 
-            <div className="flex justify-center gap-4 mt-8 flex-wrap px-4">
-              <Link
+            
+
+            <Link
                 href="/register"
-                className="px-8 py-3 bg-primary text-primary-foreground rounded-full font-semibold hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl"
+                className="px-8  py-3 bg-linear-to-r from-blue-500 to-blue-700 text-white rounded-full font-semibold hover:from-blue-600 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl"
               >
                 Get Started Free
               </Link>
-              
-            </div>
-            <p className="mt-6 text-center text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Transform any content—text, PDFs, YouTube videos, or audio—into engaging quizzes powered by AI. Perfect
+
+            <div className="flex justify-center gap-4 mt-4 flex-wrap px-4">
+              <p className="mt-6 text-center text-base sm:text-lg md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-neutral-900 to-neutral-700 dark:from-neutral-600 dark:to-white tracking-tight leading-tight max-w-2xl mx-auto">
+              Transform any content text, PDFs, YouTube videos, or audio into engaging quizzes powered by AI. Perfect
               for educators, trainers, and learners.
             </p>
+              
+            </div>
           </>
         }
       >

@@ -6,7 +6,7 @@ import Footer from "@/components/custom/Footer"
 const Home = () => {
   return (
     <>
-      <main className="w-full bg-background">
+      <main className="w-full bg-linear-to-b from-transparent via-blue-50/30 to-purple-50/30 dark:via-blue-950/10 dark:to-purple-950/10">
         <HeroSection />
         <FeaturesSection />
         <FAQSection />

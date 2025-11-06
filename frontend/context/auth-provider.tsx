@@ -44,7 +44,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(null)
       }
     } catch (err) {
-      setUser(null)
+      // Don't log errors on initial load - user might not be logged in yet
+      setUser(null)     
     } finally {
       setLoading(false)
     }
