@@ -150,7 +150,8 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
   try {
     const presented = req.cookies?.refresh_token;
     if (!presented || typeof presented !== 'string') {
-      return res.status(401).json({ status: false, message: 'No refresh token provided' });
+      // Return 204 No Content to signal "no refresh possible" - prevents client retry loops
+      return res.status(204).set('X-Refresh-Available', 'false').end();
     }
 
     const presentedHash = hashToken(presented);

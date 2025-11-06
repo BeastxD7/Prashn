@@ -135,7 +135,8 @@ const refreshAccessToken = async (req, res) => {
     try {
         const presented = (_a = req.cookies) === null || _a === void 0 ? void 0 : _a.refresh_token;
         if (!presented || typeof presented !== 'string') {
-            return res.status(401).json({ status: false, message: 'No refresh token provided' });
+            // Return 204 No Content to signal "no refresh possible" - prevents client retry loops
+            return res.status(204).set('X-Refresh-Available', 'false').end();
         }
         const presentedHash = (0, token_1.hashToken)(presented);
         const stored = await prisma_1.default.refreshToken.findUnique({ where: { tokenHash: presentedHash } });
