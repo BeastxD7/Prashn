@@ -13,6 +13,7 @@ import {
 import { navItems } from "@/constants/Navbar";
 import Link from "next/link";
 import { useState } from "react";
+import { ModeToggle } from "../mode-toggle";
 
 export function NavbarDemo() {
 
@@ -26,6 +27,10 @@ export function NavbarDemo() {
           <NavbarLogo />
           <NavItems items={navItems} />
           <div className="flex items-center gap-4">
+            {/* Theme toggle wrapped as a navbar button so it stays clickable and respects navbar layout */}
+            <NavbarButton as="div" className="!p-0 z-50">
+              <ModeToggle />
+            </NavbarButton>
             <NavbarButton as={Link} variant="primary" href="/login">Login</NavbarButton>
           </div>
         </NavBody>
@@ -55,7 +60,12 @@ export function NavbarDemo() {
               </a>
             ))}
             <div className="flex w-full flex-col gap-4">
-              
+              <NavbarButton as="div" className="w-full !p-0">
+                <div className="w-full px-2">
+                  <ModeToggle />
+                </div>
+              </NavbarButton>
+
               <NavbarButton
                 onClick={() => setIsMobileMenuOpen(false)}
                 variant="primary"
