@@ -37,6 +37,18 @@ export const api = {
     getCredits: async (): Promise<AxiosResponse | null> => {
       const res = await apiClient.get<ApiResponse<{ credits: number }>>('users/credits');
       return res;
+    },
+    changePassword: async (payload: { currentPassword: string; newPassword: string }): Promise<AxiosResponse | null> => {
+      const res = await apiClient.post<ApiResponse<any>>('users/change-password', payload);
+      return res;
+    },
+    forgotPassword: async (payload: { email: string }): Promise<AxiosResponse | null> => {
+      const res = await apiClient.post<ApiResponse<any>>('users/forgot-password', payload);
+      return res;
+    },
+    resetPassword: async (payload: { token: string; password: string }): Promise<AxiosResponse | null> => {
+      const res = await apiClient.post<ApiResponse<any>>('users/reset-password', payload);
+      return res;
     }
   },
   dashboard: {

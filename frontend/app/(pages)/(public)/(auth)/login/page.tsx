@@ -1,20 +1,44 @@
 "use client"
 
-import { Suspense } from "react"
+import { Suspense, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/auth-provider"
 import LoginForm from "./LoginForm"
-export default function LoginPage() {
 
+export default function LoginPage() {
+  const router = useRouter()
+  const { user, loading } = useAuth()
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace("/dashboard")
+    }
+  }, [user, loading, router])
+
+  useEffect(() => {
+    console.log(loading);
+  }, [loading]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    )
+  }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6">
+    <div className="flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6 bg-gradient-to-br from-background via-primary/5 to-background">
       <div className="w-full max-w-lg">
         <Suspense fallback={<div className="py-8 text-center text-sm text-muted-foreground">Loading…</div>}>
           <LoginForm />
         </Suspense>
         <div className="mt-4 text-sm text-center text-muted-foreground">
-          Don&apos;t have an account?{' '}
-          <Link href="/register" className="text-primary underline-offset-4 hover:underline">Create an account</Link>
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="text-primary font-semibold underline-offset-4 hover:underline">
+            Create an account
+          </Link>
         </div>
       </div>
     </div>

@@ -1,8 +1,7 @@
-import axios from 'axios';
+import axios from "axios";
 
-const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api';
+const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3002/api";
 console.log(baseURL);
-
 
 export const apiClient = axios.create({
   baseURL,
@@ -11,9 +10,9 @@ export const apiClient = axios.create({
 
 export default apiClient;
 
-// --- Automatic refresh-on-401 interceptor ---
-// When a request gets a 401, attempt to call POST /users/refresh once to rotate tokens
-// and then retry the original request. Queue other failed requests while refresh is in progress.
+/* =========================================================
+   SAFER REFRESH INTERCEPTOR - NO INFINITE LOOPS ✅
+   ========================================================= */
 
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -32,62 +31,64 @@ const processQueue = (error: any) => {
 
 apiClient.interceptors.response.use(
   (response) => response,
+
   async (error) => {
     const originalRequest = error?.config;
+    const status = error?.response?.status;
 
-    // If no response or not 401, just propagate
-    if (!error?.response || error.response.status !== 401) {
+    // ✅ If no response → just reject
+    if (!status) return Promise.reject(error);
+
+    // ✅ If not a 401 → no refresh needed
+    if (status !== 401) return Promise.reject(error);
+
+    const url = originalRequest?.url || "";
+
+    // ✅ Do NOT refresh for these calls
+    const isRefreshCall = url.includes("/users/refresh");
+    const isMeCall = url.includes("/users/me");
+
+    if (isRefreshCall || isMeCall) {
       return Promise.reject(error);
     }
 
-    // Avoid trying to refresh if the failing request was the refresh call itself
-    if (originalRequest && originalRequest.url && originalRequest.url.includes('/users/refresh')) {
+    // ✅ Prevent retry loops
+    if ((originalRequest as any)._retry) {
       return Promise.reject(error);
     }
 
-    // If we've already retried this request, give up
-    if (originalRequest && (originalRequest as any)._retry) {
-      return Promise.reject(error);
-    }
-
+    // ✅ If another refresh is already happening, queue the request
     if (isRefreshing) {
-      // Queue the request until refresh completes
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject, config: originalRequest });
       });
     }
 
-    // Start refresh
     (originalRequest as any)._retry = true;
     isRefreshing = true;
 
     try {
-      await apiClient.post('users/refresh');
+      await apiClient.post("/users/refresh");
+
       isRefreshing = false;
       processQueue(null);
+
       return apiClient(originalRequest);
-    } catch (err) {
+    } catch (refreshErr) {
       isRefreshing = false;
-      processQueue(err);
-      // If refresh failed, redirect to login so user can re-authenticate.
-      // Guard: if we're already on the login page, avoid forcing a navigation reload
-      // (this prevents a redirect/reload loop when `me` or `refresh` keep returning 401).
-      if (typeof window !== 'undefined') {
-        try {
-          const currentPath = window.location.pathname || '/'
-          if (currentPath !== '/login') {
-            window.location.href = '/login'
-          } else {
-            // already on login page — do not reload
-            console.debug('[apiClient] refresh failed while on /login — skipping redirect')
-          }
-        } catch (e) {
-          // fallback
-          window.location.href = '/login'
-        }
+      processQueue(refreshErr);
+
+      // NOTE: previously we forced a global redirect to /login here when refresh failed.
+      // That caused protected pages to immediately navigate away whenever any API call
+      // returned 401 (for example when a user is not logged in). Instead of redirecting
+      // at the network layer, we should reject and let the application/auth layer
+      // decide what to do (show login prompt, toast, or navigate). This is less surprising
+      // and avoids unexpected navigation from background requests.
+      if (typeof window !== "undefined") {
+        console.debug("[apiClient] token refresh failed; rejecting and handing control to app layer", refreshErr);
       }
-      return Promise.reject(err);
+
+      return Promise.reject(refreshErr);
     }
   }
 );
-
