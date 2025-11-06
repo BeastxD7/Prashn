@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -36,8 +36,7 @@ type ResetPasswordSchemaType = z.infer<typeof ResetPasswordSchema>
 
 export default function ResetPasswordPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const token = searchParams?.get("token") || ""
+  const [token, setToken] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -55,14 +54,17 @@ export default function ResetPasswordPage() {
   })
 
   useEffect(() => {
-    // Wait for searchParams to be ready
-    if (searchParams !== null) {
-      setIsReady(true)
-      if (!token) {
-        setInvalidToken(true)
-      }
+    if (typeof window === "undefined") {
+      return
     }
-  }, [token, searchParams])
+
+    const params = new URLSearchParams(window.location.search)
+    const tokenParam = params.get("token") ?? ""
+
+    setToken(tokenParam)
+    setInvalidToken(!tokenParam)
+    setIsReady(true)
+  }, [])
 
   async function onSubmit(data: ResetPasswordSchemaType) {
     if (!token) {
