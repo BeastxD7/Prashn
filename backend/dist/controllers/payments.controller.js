@@ -16,8 +16,6 @@ const createOrder = async (req, res) => {
             ? process.env.RAZORPAY_OFFER_IDS.split(",").map(id => id.trim())
             : [];
         const plan = req.body.plan;
-        console.log('----------------------------');
-        console.log(offerIds);
         const selectedPackage = credits_1.CREDIT_PACKAGES.find(p => p.id === plan);
         if (!selectedPackage) {
             return res.status(400).json({ message: "Invalid package selected" });
@@ -28,7 +26,6 @@ const createOrder = async (req, res) => {
             receipt: crypto_1.default.randomBytes(10).toString('hex'),
             notes: { plan: selectedPackage.id },
             offers: offerIds.length > 0 ? offerIds : undefined,
-            // offers: 'offer_RcAIY8PxTqji9z',
         };
         const order = await razorpay_1.razorpay.orders.create(options, (err, order) => {
             if (err) {

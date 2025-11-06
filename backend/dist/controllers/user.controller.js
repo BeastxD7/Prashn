@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserCredits = exports.getProfile = exports.deleteUserById = exports.updateUserById = exports.getUserById = exports.getAllUsers = exports.refreshAccessToken = exports.logoutUser = exports.loginUser = exports.createUser = void 0;
+exports.getUserCredits = exports.getProfile = exports.deleteUserById = exports.updateUserById = exports.getUserById = exports.getAllUsers = exports.changePassword = exports.resetPassword = exports.forgotPassword = exports.refreshAccessToken = exports.logoutUser = exports.loginUser = exports.createUser = void 0;
 const prisma_1 = __importDefault(require("../db/prisma"));
 const client_1 = require("@prisma/client");
 const user_1 = require("../zodSchemas/user");
@@ -11,6 +11,7 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const token_1 = require("../utils/token");
+const email_1 = require("../utils/email");
 dotenv_1.default.config();
 // Create a new user
 const createUser = async (req, res) => {
@@ -164,6 +165,139 @@ const refreshAccessToken = async (req, res) => {
     }
 };
 exports.refreshAccessToken = refreshAccessToken;
+const forgotPassword = async (req, res) => {
+    const safeResponse = { status: true, message: 'If an account exists for that email, we have sent reset instructions.' };
+    try {
+        const { data, error } = user_1.ForgotPasswordSchema.safeParse(req.body);
+        if (error) {
+            return res.status(400).json({ status: false, message: 'Invalid email address supplied.' });
+        }
+        const email = data.email.toLowerCase();
+        const user = await prisma_1.default.user.findUnique({ where: { email } });
+        if (!user) {
+            return res.status(200).json(safeResponse);
+        }
+        // Remove expired tokens to keep table tidy
+        await prisma_1.default.passwordResetToken.deleteMany({
+            where: {
+                userId: user.id,
+                OR: [{ expiresAt: { lt: new Date() } }, { used: true }],
+            },
+        });
+        const rawToken = (0, token_1.generateToken)(48);
+        const hashedToken = (0, token_1.hashToken)(rawToken);
+        const ttlMinutes = parseInt(process.env.PASSWORD_RESET_TOKEN_EXPIRES_MINUTES || '30', 10);
+        const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000);
+        await prisma_1.default.passwordResetToken.create({
+            data: {
+                userId: user.id,
+                tokenHash: hashedToken,
+                expiresAt,
+            },
+        });
+        await (0, email_1.sendPasswordResetEmail)({ to: user.email, token: rawToken, userName: user.firstName });
+        return res.status(200).json(safeResponse);
+    }
+    catch (error) {
+        console.error('forgotPassword error', error);
+        return res.status(200).json(safeResponse);
+    }
+};
+exports.forgotPassword = forgotPassword;
+const resetPassword = async (req, res) => {
+    try {
+        const { data, error } = user_1.ResetPasswordSchema.safeParse(req.body);
+        if (error) {
+            return res.status(400).json({ status: false, message: 'Invalid reset payload.' });
+        }
+        const hashedToken = (0, token_1.hashToken)(data.token);
+        const resetRecord = await prisma_1.default.passwordResetToken.findUnique({ where: { tokenHash: hashedToken } });
+        if (!resetRecord || resetRecord.used || resetRecord.expiresAt < new Date()) {
+            return res.status(400).json({ status: false, message: 'Reset token is invalid or expired.' });
+        }
+        const user = await prisma_1.default.user.findUnique({ where: { id: resetRecord.userId } });
+        if (!user) {
+            return res.status(400).json({ status: false, message: 'Reset token is invalid.' });
+        }
+        const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+        const hashedPassword = await bcryptjs_1.default.hash(data.password, saltRounds);
+        await prisma_1.default.$transaction([
+            prisma_1.default.user.update({
+                where: { id: user.id },
+                data: { password: hashedPassword },
+            }),
+            prisma_1.default.passwordResetToken.update({
+                where: { tokenHash: hashedToken },
+                data: { used: true, usedAt: new Date() },
+            }),
+            prisma_1.default.passwordResetToken.deleteMany({
+                where: { userId: user.id, used: false },
+            }),
+            prisma_1.default.refreshToken.updateMany({
+                where: { userId: user.id },
+                data: { revoked: true },
+            }),
+        ]);
+        return res.status(200).json({ status: true, message: 'Password reset successful. Please log in with your new password.' });
+    }
+    catch (error) {
+        console.error('resetPassword error', error);
+        return res.status(500).json({ status: false, message: 'Failed to reset password.' });
+    }
+};
+exports.resetPassword = resetPassword;
+const changePassword = async (req, res) => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({ status: false, message: 'Unauthorized' });
+        }
+        const { data, error } = user_1.ChangePasswordSchema.safeParse(req.body);
+        if (error) {
+            return res.status(400).json({ status: false, message: 'Invalid password change payload.' });
+        }
+        if (data.currentPassword === data.newPassword) {
+            return res.status(400).json({ status: false, message: 'New password must be different from current password.' });
+        }
+        const user = await prisma_1.default.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({ status: false, message: 'User not found' });
+        }
+        const isPasswordValid = await bcryptjs_1.default.compare(data.currentPassword, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ status: false, message: 'Current password is incorrect.' });
+        }
+        const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+        const hashedPassword = await bcryptjs_1.default.hash(data.newPassword, saltRounds);
+        await prisma_1.default.$transaction([
+            prisma_1.default.user.update({
+                where: { id: userId },
+                data: { password: hashedPassword },
+            }),
+            prisma_1.default.refreshToken.updateMany({
+                where: { userId },
+                data: { revoked: true },
+            }),
+            prisma_1.default.passwordResetToken.deleteMany({ where: { userId } }),
+        ]);
+        const isProd = process.env.NODE_ENV === 'production';
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProd,
+            domain: isProd ? process.env.COOKIE_DOMAIN : undefined,
+            sameSite: isProd ? 'none' : 'lax',
+            path: '/',
+        };
+        res.cookie('access_token', '', Object.assign(Object.assign({}, cookieOptions), { maxAge: 0 }));
+        res.cookie('refresh_token', '', Object.assign(Object.assign({}, cookieOptions), { maxAge: 0 }));
+        return res.status(200).json({ status: true, message: 'Password updated. Please log in again.' });
+    }
+    catch (error) {
+        console.error('changePassword error', error);
+        return res.status(500).json({ status: false, message: 'Failed to change password.' });
+    }
+};
+exports.changePassword = changePassword;
 // Get all users
 const getAllUsers = async (req, res) => {
     try {

@@ -7,6 +7,7 @@ import AgentRouter from './routes/agent.route'
 import cors from 'cors';
 import DashboardRouter from './routes/dashboard.route'
 import PaymentRouter from './routes/payments.route'
+import { generalRateLimiter } from './middleware/rateLimit'
 
 const app = express()
 
@@ -27,6 +28,8 @@ app.use(morgan(isProd ? 'combined' : 'dev'));
 app.use(express.json())
 // Parse cookies so `cookieAuth` middleware can read `req.cookies.access_token`
 app.use(cookieParser());
+// Apply a global rate limiter to mitigate brute-force attempts and abuse
+app.use(generalRateLimiter);
 
 app.get("/", (_req, res)=> {
     res.json({message: "Hello World!"})

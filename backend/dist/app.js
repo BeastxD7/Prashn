@@ -12,6 +12,7 @@ const agent_route_1 = __importDefault(require("./routes/agent.route"));
 const cors_1 = __importDefault(require("cors"));
 const dashboard_route_1 = __importDefault(require("./routes/dashboard.route"));
 const payments_route_1 = __importDefault(require("./routes/payments.route"));
+const rateLimit_1 = require("./middleware/rateLimit");
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3002;
 // Allow the local frontend during development. Use an env var in production for security.
@@ -27,6 +28,8 @@ app.use((0, morgan_1.default)(isProd ? 'combined' : 'dev'));
 app.use(express_1.default.json());
 // Parse cookies so `cookieAuth` middleware can read `req.cookies.access_token`
 app.use((0, cookie_parser_1.default)());
+// Apply a global rate limiter to mitigate brute-force attempts and abuse
+app.use(rateLimit_1.generalRateLimiter);
 app.get("/", (_req, res) => {
     res.json({ message: "Hello World!" });
 });
